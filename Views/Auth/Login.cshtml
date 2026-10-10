@@ -1,0 +1,79 @@
+@model LoginViewModel
+@{
+    ViewData["Title"] = ViewData["Title"] ?? "Đăng nhập - UTC Cinema";
+    var successMessage = TempData["successMessage"] as string;
+}
+<div class="auth-container">
+    <div class="auth-card animate-fade-up">
+        <div class="auth-logo"><i class="fas fa-film me-2"></i>UTC Cinema</div>
+        <div class="auth-subtitle">Đăng nhập để đặt vé và nhận ưu đãi</div>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert mb-3" style="background:rgba(229,9,20,0.1);border:1px solid rgba(229,9,20,0.3);color:#ff4d4d;border-radius:10px;padding:12px 16px;font-size:0.88rem">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <div asp-validation-summary="All"></div>
+            </div>
+        }
+        @if (!string.IsNullOrEmpty(successMessage))
+        {
+            <div class="alert mb-3" style="background:rgba(70,211,105,0.1);border:1px solid rgba(70,211,105,0.3);color:#46d369;border-radius:10px;padding:12px 16px;font-size:0.88rem">
+                <i class="fas fa-check-circle me-2"></i>@successMessage
+            </div>
+        }
+
+        <form asp-controller="Auth" asp-action="Login" method="post">
+            <input type="hidden" asp-for="ReturnUrl"/>
+            @Html.AntiForgeryToken()
+
+            <div class="mb-3">
+                <label class="form-label-dark" for="emailInput">Email</label>
+                <div style="position:relative">
+                    <i class="fas fa-envelope" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#666"></i>
+                    <input type="email" asp-for="Email" id="emailInput"
+                           class="form-control-dark form-control" style="padding-left:40px"
+                           placeholder="your@email.com" autocomplete="email"/>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label-dark" for="passwordInput">Mật khẩu</label>
+                <div style="position:relative">
+                    <i class="fas fa-lock" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#666"></i>
+                    <input type="password" asp-for="MatKhau" id="passwordInput"
+                           class="form-control-dark form-control" style="padding-left:40px;padding-right:44px"
+                           placeholder="••••••••" autocomplete="current-password"/>
+                    <button type="button" onclick="togglePassword('passwordInput')"
+                            style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:#666;cursor:pointer">
+                        <i class="fas fa-eye" id="eyeIcon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-cinema w-100" style="padding:13px;font-size:0.95rem;justify-content:center">
+                <i class="fas fa-sign-in-alt"></i>Đăng nhập
+            </button>
+        </form>
+
+        <div class="text-center mt-4" style="color:#666;font-size:0.88rem">
+            Chưa có tài khoản?
+            <a href="/Auth/Register" style="color:#e50914;text-decoration:none;font-weight:600">Đăng ký ngay</a>
+        </div>
+
+    </div>
+</div>
+@section Scripts {
+<script>
+function togglePassword(id) {
+    const input = document.getElementById(id);
+    const icon = document.getElementById('eyeIcon');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'fas fa-eye';
+    }
+}
+</script>
+}

@@ -1,0 +1,229 @@
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Localization
+@using Microsoft.Extensions.Localization
+@using DatVeXemPhim.Resources
+@inject SignInManager<ApplicationUser> SignInManager
+@inject IStringLocalizer<SharedResource> L
+@{
+    var requestCulture = Context.Features.Get<IRequestCultureFeature>();
+    var currentCulture = requestCulture?.RequestCulture.UICulture.Name ?? "vi-VN";
+}
+<!DOCTYPE html>
+<html lang="@currentCulture">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="UTC Cinema - Đặt vé xem phim trực tuyến nhanh chóng, tiện lợi" />
+    <title>@(ViewData["Title"] ?? "UTC Cinema - Đặt Vé Xem Phim")</title>
+
+    <!-- Bootstrap 5 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <!-- Custom CSS -->
+    @* asp-append-version tự thêm hash của file vào URL (?v=...), buộc trình duyệt tải lại
+       ngay khi style.css thay đổi nội dung, thay vì dùng bản cache cũ. *@
+    <link rel="stylesheet" href="~/css/style.css" asp-append-version="true" />
+
+    @await RenderSectionAsync("Head", required: false)
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner-cinema"></div>
+</div>
+
+<!-- NAVBAR -->
+<nav class="navbar-utc">
+    <div class="container">
+        <div class="d-flex align-items-center justify-content-between w-100">
+            <!-- Logo -->
+            <a href="/" class="navbar-brand-utc">
+                <span class="brand-icon"><i class="fas fa-film"></i></span>
+                <span>UTC<span style="color:#fff">Cinema</span></span>
+            </a>
+
+            <!-- Nav links -->
+            <div class="d-none d-md-flex align-items-center gap-1">
+                <a href="/" class="nav-link-utc @(ViewContext.HttpContext.Request.Path == "/" ? "active" : "")">
+                    <i class="fas fa-home me-1"></i>@L["TrangChu"]
+                </a>
+                <a href="/tim-kiem" class="nav-link-utc">
+                    <i class="fas fa-search me-1"></i>@L["Phim"]
+                </a>
+                <a href="/tim-kiem?trangThai=Đang chiếu" class="nav-link-utc">
+                    <i class="fas fa-play me-1"></i>@L["DangChieu"]
+                </a>
+                <a href="/tim-kiem?trangThai=Sắp chiếu" class="nav-link-utc">
+                    <i class="fas fa-clock me-1"></i>@L["SapChieu"]
+                </a>
+            </div>
+
+            <!-- User section -->
+            <div class="d-flex align-items-center gap-2">
+                <!-- Chuyển đổi ngôn ngữ (quốc tế hóa) -->
+                <div class="dropdown">
+                    <button class="btn-cinema-outline dropdown-toggle" data-bs-toggle="dropdown" title="@L["NgonNgu"]">
+                        <i class="fas fa-globe"></i>@(currentCulture.StartsWith("en") ? "EN" : "VI")
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" style="background:#1a1a1a;border:1px solid #2a2a2a">
+                        <li>
+                            <a class="dropdown-item" style="color:#b3b3b3" href="/Culture/Set?culture=vi-VN&returnUrl=@Uri.EscapeDataString(ViewContext.HttpContext.Request.Path + ViewContext.HttpContext.Request.QueryString)">
+                                🇻🇳 Tiếng Việt
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" style="color:#b3b3b3" href="/Culture/Set?culture=en-US&returnUrl=@Uri.EscapeDataString(ViewContext.HttpContext.Request.Path + ViewContext.HttpContext.Request.QueryString)">
+                                🇬🇧 English
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                @if (SignInManager.IsSignedIn(User))
+                {
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="dropdown">
+                            <button class="btn-cinema-outline dropdown-toggle" data-bs-toggle="dropdown" style="gap:8px">
+                                <i class="fas fa-user-circle"></i>
+                                <span style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@User.Identity?.Name</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" style="background:#1a1a1a;border:1px solid #2a2a2a;min-width:200px">
+                                @if (User.IsInRole("KhachHang"))
+                                {
+                                    <li>
+                                        <a class="dropdown-item" style="color:#b3b3b3" href="/tai-khoan">
+                                            <i class="fas fa-user me-2"></i>@L["TaiKhoan"]
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" style="color:#b3b3b3" href="/dat-ve/lich-su">
+                                            <i class="fas fa-ticket-alt me-2"></i>@L["LichSuDatVe"]
+                                        </a>
+                                    </li>
+                                }
+                                @if (User.IsInRole("NhanVien") || User.IsInRole("QuanLy") || User.IsInRole("Admin"))
+                                {
+                                    <li>
+                                        <a class="dropdown-item" style="color:#b3b3b3" href="/admin">
+                                            <i class="fas fa-cog me-2"></i>@L["QuanTri"]
+                                        </a>
+                                    </li>
+                                }
+                                <li><hr class="dropdown-divider" style="border-color:#2a2a2a" /></li>
+                                <li>
+                                    <form action="/Auth/Logout" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="dropdown-item" style="color:#e50914;background:none;border:none;width:100%;text-align:left;padding:8px 16px">
+                                            <i class="fas fa-sign-out-alt me-2"></i>@L["DangXuat"]
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex gap-2">
+                        <a href="/Auth/Login" class="btn-cinema-outline">
+                            <i class="fas fa-sign-in-alt"></i>@L["DangNhap"]
+                        </a>
+                        <a href="/Auth/Register" class="btn-cinema">
+                            <i class="fas fa-user-plus"></i>@L["DangKy"]
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<main>
+    @RenderBody()
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="footer-logo"><i class="fas fa-film me-2"></i>UTC Cinema</div>
+                <p style="color:#666;font-size:0.88rem;line-height:1.7">
+                    Trải nghiệm điện ảnh đẳng cấp với công nghệ âm thanh và hình ảnh hiện đại nhất.
+                    Đặt vé nhanh chóng, tiện lợi ngay trên website.
+                </p>
+                <div class="d-flex gap-2 mt-3">
+                    <a href="#" style="width:36px;height:36px;background:#1a1a1a;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#b3b3b3;text-decoration:none;transition:0.3s" onmouseover="this.style.background='#e50914';this.style.color='#fff'" onmouseout="this.style.background='#1a1a1a';this.style.color='#b3b3b3'">
+                        <i class="fab fa-facebook-f"></i>
+                    </a>
+                    <a href="#" style="width:36px;height:36px;background:#1a1a1a;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#b3b3b3;text-decoration:none;transition:0.3s" onmouseover="this.style.background='#e50914';this.style.color='#fff'" onmouseout="this.style.background='#1a1a1a';this.style.color='#b3b3b3'">
+                        <i class="fab fa-youtube"></i>
+                    </a>
+                    <a href="#" style="width:36px;height:36px;background:#1a1a1a;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#b3b3b3;text-decoration:none;transition:0.3s" onmouseover="this.style.background='#e50914';this.style.color='#fff'" onmouseout="this.style.background='#1a1a1a';this.style.color='#b3b3b3'">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-2 col-6">
+                <div class="footer-heading">Phim</div>
+                <a href="/tim-kiem?trangThai=Đang chiếu" class="footer-link">Đang chiếu</a>
+                <a href="/tim-kiem?trangThai=Sắp chiếu" class="footer-link">Sắp chiếu</a>
+                <a href="/tim-kiem" class="footer-link">Tất cả phim</a>
+            </div>
+            <div class="col-lg-2 col-6">
+                <div class="footer-heading">Hỗ trợ</div>
+                <a href="#" class="footer-link">Hướng dẫn đặt vé</a>
+                <a href="#" class="footer-link">Chính sách đổi/trả</a>
+                <a href="#" class="footer-link">Liên hệ</a>
+            </div>
+            <div class="col-lg-4">
+                <div class="footer-heading">Hệ thống rạp</div>
+                @{
+                    var danhSachRap = ViewData["danhSachRap"] as System.Collections.IEnumerable;
+                }
+                @if (danhSachRap != null)
+                {
+                    foreach (dynamic rap in danhSachRap)
+                    {
+                        <div style="margin-bottom:8px">
+                            <div style="color:#fff;font-size:0.85rem;font-weight:600">@rap.TenRap</div>
+                            <div style="color:#666;font-size:0.78rem">@rap.DiaChi</div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+        <div class="footer-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span>&copy; 2026 UTC Cinema. @L["BanQuyen"]</span>
+            <span>Được xây dựng với <i class="fas fa-heart" style="color:#e50914"></i> bởi UTC</span>
+        </div>
+    </div>
+</footer>
+
+<!-- Scripts -->
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/main.js"></script>
+
+<!-- Flash message toasts -->
+@{
+    var successMessage = TempData["successMessage"] as string;
+    var errorMessage = TempData["errorMessage"] as string;
+}
+@if (!string.IsNullOrEmpty(successMessage))
+{
+    <div data-toast-success="@successMessage" style="display:none"></div>
+}
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div data-toast-error="@errorMessage" style="display:none"></div>
+}
+
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
