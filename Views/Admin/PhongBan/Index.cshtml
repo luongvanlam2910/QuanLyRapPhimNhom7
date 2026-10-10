@@ -1,0 +1,85 @@
+@using DatVeXemPhim.Models.Entities
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = ViewBag.PageTitle;
+    var danhSach = (List<PhongBan>)ViewBag.DanhSachPhongBan;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Quản lý phòng ban</h3>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPbModal"><i class="fas fa-plus"></i> Thêm phòng ban</button>
+</div>
+
+<div class="card p-3">
+    <table class="table table-hover align-middle">
+        <thead><tr><th>Mã</th><th>Tên phòng ban</th><th>Mô tả</th><th>Số nhân viên</th><th></th></tr></thead>
+        <tbody>
+        @if (danhSach.Count == 0)
+        {
+            <tr><td colspan="5" class="text-center text-muted">Chưa có phòng ban nào</td></tr>
+        }
+        @foreach (var pb in danhSach)
+        {
+            <tr>
+                <td>@pb.MaPb</td>
+                <td>@pb.TenPb</td>
+                <td>@pb.MoTa</td>
+                <td>@pb.NhanViens.Count</td>
+                <td class="text-nowrap">
+                    <button type="button" class="btn btn-sm btn-outline-primary btn-edit-pb" data-id="@pb.Id" data-ten="@pb.TenPb" data-mota="@pb.MoTa"><i class="fas fa-pen-to-square"></i> Sửa</button>
+                    <form method="post" asp-action="Xoa" asp-route-id="@pb.Id" class="d-inline" onsubmit="return confirm('Xóa phòng ban này?')">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash-can"></i> Xóa</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+<div class="modal fade" id="addPbModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="Them">
+                @Html.AntiForgeryToken()
+                <div class="modal-header"><h5 class="modal-title">Thêm phòng ban</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-2"><label class="form-label">Tên phòng ban</label><input name="tenPb" class="form-control" required /></div>
+                    <div class="mb-2"><label class="form-label">Mô tả</label><textarea name="moTa" class="form-control"></textarea></div>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> Thêm</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editPbModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="Sua">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="editPbId" />
+                <div class="modal-header"><h5 class="modal-title">Sửa phòng ban</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-2"><label class="form-label">Tên phòng ban</label><input name="tenPb" id="editPbTen" class="form-control" required maxlength="100" /></div>
+                    <div class="mb-2"><label class="form-label">Mô tả</label><textarea name="moTa" id="editPbMoTa" class="form-control" maxlength="300"></textarea></div>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-primary"><i class="fas fa-floppy-disk"></i> Lưu</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+document.querySelectorAll('.btn-edit-pb').forEach(function (b) {
+    b.addEventListener('click', function () {
+        document.getElementById('editPbId').value = b.dataset.id;
+        document.getElementById('editPbTen').value = b.dataset.ten || '';
+        document.getElementById('editPbMoTa').value = b.dataset.mota || '';
+        new bootstrap.Modal(document.getElementById('editPbModal')).show();
+    });
+});
+</script>
+}
