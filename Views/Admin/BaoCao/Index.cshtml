@@ -1,0 +1,92 @@
+@using DatVeXemPhim.Models.ViewModels
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = ViewBag.PageTitle;
+    var stats = (DashboardStatsDto)ViewBag.Stats;
+    var doanhThuPhim = (List<DoanhThuPhimDto>)ViewBag.DoanhThuPhim;
+    var doanhThuRap = (List<DoanhThuRapDto>)ViewBag.DoanhThuRap;
+    var doanhThuPhuongThuc = (List<DoanhThuPhuongThucDto>)ViewBag.DoanhThuPhuongThuc;
+}
+
+<h3 class="mb-3">Báo cáo doanh thu</h3>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card p-3"><div class="text-muted">Vé đã bán</div><h4>@stats.TongVeBan</h4></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3"><div class="text-muted">Tổng doanh thu</div><h4>@stats.TongDoanhThu.ToString("N0") ₫</h4></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3"><div class="text-muted">Đã đặt vé</div><h4>@stats.DaDatVe</h4></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3"><div class="text-muted">Khách hàng</div><h4>@stats.TongKhachHang</h4></div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-7">
+        <div class="card p-3"><h5>Doanh thu theo phim</h5><canvas id="phimChart" height="120"></canvas></div>
+    </div>
+    <div class="col-md-5">
+        <div class="card p-3"><h5>Doanh thu theo phương thức</h5><canvas id="ptChart" height="120"></canvas></div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card p-3">
+            <h5>Doanh thu theo phim</h5>
+            <table class="table">
+                <thead><tr><th>Phim</th><th>Doanh thu</th><th>Vé bán</th></tr></thead>
+                <tbody>
+                @if (doanhThuPhim.Count == 0)
+                {
+                    <tr><td colspan="3" class="text-center text-muted">Không có dữ liệu</td></tr>
+                }
+                @foreach (var row in doanhThuPhim)
+                {
+                    <tr><td>@row.TenPhim</td><td>@row.TongDoanhThu.ToString("N0") ₫</td><td>@row.SoVeBan</td></tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card p-3">
+            <h5>Doanh thu theo rạp</h5>
+            <table class="table">
+                <thead><tr><th>Rạp</th><th>Doanh thu</th><th>Vé bán</th></tr></thead>
+                <tbody>
+                @if (doanhThuRap.Count == 0)
+                {
+                    <tr><td colspan="3" class="text-center text-muted">Không có dữ liệu</td></tr>
+                }
+                @foreach (var row in doanhThuRap)
+                {
+                    <tr><td>@row.TenRap</td><td>@row.TongDoanhThu.ToString("N0") ₫</td><td>@row.SoVeBan</td></tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+    const phimLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(doanhThuPhim.Select(x => x.TenPhim)));
+    const phimData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(doanhThuPhim.Select(x => x.TongDoanhThu)));
+    new Chart(document.getElementById('phimChart'), {
+        type: 'bar',
+        data: { labels: phimLabels, datasets: [{ label: 'Doanh thu', data: phimData, backgroundColor: '#4e73df' }] }
+    });
+    const ptLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(doanhThuPhuongThuc.Select(x => x.PhuongThuc)));
+    const ptData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(doanhThuPhuongThuc.Select(x => x.TongTien)));
+    new Chart(document.getElementById('ptChart'), {
+        type: 'doughnut',
+        data: { labels: ptLabels, datasets: [{ data: ptData, backgroundColor: ['#4e73df','#1cc88a','#36b9cc','#f6c23e','#e74a3b'] }] }
+    });
+</script>
+}

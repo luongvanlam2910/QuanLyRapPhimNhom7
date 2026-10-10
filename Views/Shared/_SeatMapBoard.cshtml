@@ -1,0 +1,17 @@
+@* Sơ đồ ghế dùng chung cho trang khách (DatVe/ChonGhe) và trang bán vé tại quầy (Admin/BanVe):
+   màn hình, vùng ghế (#seatContainer — được SeatGrid.render điền) và chú giải màu. *@
+<div class="screen-indicator"></div>
+<div style="text-align:center;margin-bottom:32px"></div>
+
+<div id="seatGrid">
+    <div id="seatContainer"></div>
+</div>
+
+<div class="seat-legend">
+    <div class="legend-item"><div class="legend-seat seat-thuong" style="border-radius:4px 4px 2px 2px"></div><span>Thường</span></div>
+    <div class="legend-item"><div class="legend-seat seat-vip" style="border-radius:4px 4px 2px 2px"></div><span>VIP (+30%)</span></div>
+    <div class="legend-item"><div class="legend-seat seat-doi" style="border-radius:4px 4px 2px 2px;width:48px"></div><span>Đôi (+50%)</span></div>
+    <div class="legend-item"><div class="legend-seat seat-selected" style="border-radius:4px 4px 2px 2px"></div><span>Đang chọn</span></div>
+    <div class="legend-item"><div class="legend-seat seat-booked" style="border-radius:4px 4px 2px 2px"></div><span>Đã đặt</span></div>
+    <div class="legend-item"><div class="legend-seat seat-hold" style="border-radius:4px 4px 2px 2px"></div><span>Đang giữ</span></div>
+</div>

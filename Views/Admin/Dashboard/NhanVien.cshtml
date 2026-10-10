@@ -1,0 +1,75 @@
+@using DatVeXemPhim.Models.Entities
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = ViewBag.PageTitle;
+    var suatHomNay = (List<LichChieu>)ViewBag.SuatHomNay;
+    var donGanDay = (List<DatVe>)ViewBag.DonGanDay;
+}
+
+<div class="topbar d-flex justify-content-between align-items-center mb-3">
+    <h3>Công việc của tôi</h3>
+    <span id="clockNow">@DateTime.Now.ToString("HH:mm - dd/MM/yyyy")</span>
+</div>
+
+<div class="d-flex flex-wrap gap-2 mb-4">
+    <a class="btn btn-primary btn-lg" href="/Admin/BanVe"><i class="fas fa-cash-register"></i> Bán vé tại quầy</a>
+    <a class="btn btn-secondary btn-lg" href="/Admin/SoatVe"><i class="fas fa-qrcode"></i> Soát vé</a>
+    <a class="btn btn-outline-secondary btn-lg" href="/Admin/DatVe"><i class="fas fa-ticket-alt"></i> Vé tôi đã bán</a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3"><div class="card p-3"><div class="text-muted">Đơn bán hôm nay</div><h3>@ViewBag.DonHomNay</h3></div></div>
+    <div class="col-6 col-md-3"><div class="card p-3"><div class="text-muted">Vé bán hôm nay</div><h3>@ViewBag.VeHomNay</h3></div></div>
+    <div class="col-6 col-md-3"><div class="card p-3"><div class="text-muted">Vé đã soát hôm nay</div><h3>@ViewBag.SoatHomNay</h3></div></div>
+    <div class="col-6 col-md-3"><div class="card p-3"><div class="text-muted">Tháng này (bán / soát)</div><h3>@ViewBag.VeThangNay / @ViewBag.SoatThangNay</h3></div></div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card p-3">
+            <h5>Suất chiếu còn lại hôm nay</h5>
+            @if (suatHomNay.Count == 0)
+            {
+                <p class="text-muted mb-0">Không còn suất chiếu nào hôm nay.</p>
+            }
+            else
+            {
+                <div class="list-group">
+                    @foreach (var lc in suatHomNay)
+                    {
+                        <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" href="/Admin/BanVe?maLich=@lc.Id">
+                            <span><strong>@lc.Phim?.TenPhim</strong><br /><small>@lc.PhongChieu?.TenPhong</small></span>
+                            <span class="badge bg-secondary">@lc.ThoiGianBatDau.ToString("HH:mm")</span>
+                        </a>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card p-3">
+            <h5>Đơn tôi bán gần đây</h5>
+            @if (donGanDay.Count == 0)
+            {
+                <p class="text-muted mb-0">Bạn chưa bán đơn nào.</p>
+            }
+            else
+            {
+                <table class="table table-hover align-middle" data-no-paging>
+                    <thead><tr><th>Mã đặt</th><th>Thời gian</th><th>Số ghế</th><th>Trạng thái</th></tr></thead>
+                    <tbody>
+                    @foreach (var d in donGanDay)
+                    {
+                        <tr>
+                            <td><a href="/dat-ve/ket-qua/@d.MaDat" target="_blank">@d.MaDat</a></td>
+                            <td>@d.NgayDat.ToString("HH:mm dd/MM")</td>
+                            <td>@d.Ves.Count(v => v.TrangThai != "Đã hủy")</td>
+                            <td><span class="badge @(d.TrangThai == "Đã thanh toán" ? "bg-success" : d.TrangThai == "Đã hủy" ? "bg-danger" : "bg-warning text-dark")">@d.TrangThai</span></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+</div>

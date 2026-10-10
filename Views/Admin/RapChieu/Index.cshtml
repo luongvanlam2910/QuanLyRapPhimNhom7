@@ -1,0 +1,226 @@
+﻿@using DatVeXemPhim.Models.Entities
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = ViewBag.PageTitle;
+    var danhSachRap = (List<RapChieu>)ViewBag.DanhSachRap;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Quản lý rạp chiếu</h3>
+    @if (User.IsInRole("Admin"))
+    {
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRapModal"><i class="fas fa-plus"></i> Thêm rạp</button>
+    }
+</div>
+
+<div class="row">
+    <div class="col-md-5" data-paged-list data-toolbar="inside" data-item=".card" data-page-size="5">
+        @foreach (var rap in danhSachRap)
+        {
+            <div class="card p-3 mb-2">
+                <div class="d-flex justify-content-between">
+                    <div style="cursor:pointer" onclick="loadPhong('@rap.Id')">
+                        <strong>@rap.TenRap</strong><br />
+                        <small class="text-muted">@rap.DiaChi</small><br />
+                        <small>@rap.PhongChieus.Count phòng chiếu</small>
+                    </div>
+                    <div class="text-end">
+                        @if (User.IsInRole("QuanLy") || User.IsInRole("Admin"))
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-warning mb-1 btn-edit-rap" data-id="@rap.Id" data-ten="@rap.TenRap" data-diachi="@rap.DiaChi" data-sdt="@rap.Sdt"><i class="fas fa-pen-to-square"></i> Sửa</button>
+                            <button class="btn btn-sm btn-outline-primary" onclick="openAddPhongModal(this)" data-ma-rap="@rap.Id" data-ten-rap="@rap.TenRap"><i class="fas fa-door-open"></i> Thêm phòng</button>
+                        }
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <form method="post" asp-action="XoaRap" asp-route-maRap="@rap.Id" onsubmit="return confirm('Xóa rạp này? Tất cả phòng chiếu liên quan sẽ bị xóa!')">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-danger mt-1"><i class="fas fa-trash-can"></i> Xóa</button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+    <div class="col-md-7">
+        <div class="card p-3">
+            <h5>Danh sách phòng chiếu</h5>
+            <div id="phongList" class="text-muted">Chọn một rạp để xem danh sách phòng chiếu.</div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Rap Modal -->
+<div class="modal fade" id="addRapModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="ThemRap">
+                @Html.AntiForgeryToken()
+                <div class="modal-header"><h5 class="modal-title">Thêm rạp chiếu</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-2"><label class="form-label">Tên rạp</label><input name="tenRap" class="form-control" required /></div>
+                    <div class="mb-2"><label class="form-label">Địa chỉ</label><input name="diaChi" class="form-control" required /></div>
+                    <div class="mb-2"><label class="form-label">SĐT</label><input name="sdt" class="form-control" /></div>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> Thêm</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Rap Modal -->
+<div class="modal fade" id="editRapModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="SuaRap">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="maRap" id="editRapId" />
+                <div class="modal-header"><h5 class="modal-title">Sửa rạp chiếu</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-2"><label class="form-label">Tên rạp</label><input name="tenRap" id="editRapTen" class="form-control" required maxlength="100" /></div>
+                    <div class="mb-2"><label class="form-label">Địa chỉ</label><input name="diaChi" id="editRapDiaChi" class="form-control" required maxlength="200" /></div>
+                    <div class="mb-2"><label class="form-label">SĐT</label><input name="sdt" id="editRapSdt" class="form-control" maxlength="15" /></div>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-primary"><i class="fas fa-floppy-disk"></i> Lưu</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Phong Modal -->
+<div class="modal fade" id="editPhongModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="SuaPhong">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="maPhong" id="editPhongId" />
+                <div class="modal-header"><h5 class="modal-title">Sửa phòng chiếu</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-2"><label class="form-label">Tên phòng</label><input name="tenPhong" id="editPhongTen" class="form-control" required maxlength="50" /></div>
+                    <div class="mb-2"><label class="form-label">Sức chứa</label><input id="editPhongSucChua" class="form-control" readonly />
+                        <small class="text-muted">Sức chứa gắn với sơ đồ ghế đã tạo nên không thay đổi ở đây.</small></div>
+                    <div class="mb-2">
+                        <label class="form-label">Loại phòng</label>
+                        <select name="loaiPhong" id="editPhongLoai" class="form-select">
+                            <option value="Thuong">Thường</option>
+                            <option value="VIP">VIP</option>
+                            <option value="IMAX">IMAX</option>
+                            <option value="4DX">4DX</option>
+                            <option value="Dolby">Dolby</option>
+                            <option value="2D">2D</option>
+                            <option value="3D">3D</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-primary"><i class="fas fa-floppy-disk"></i> Lưu</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<form id="xoaPhongForm" method="post" asp-action="XoaPhong" asp-route-maPhong="0" class="d-none">@Html.AntiForgeryToken()</form>
+
+<!-- Add Phong Modal -->
+<div class="modal fade" id="addPhongModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="ThemPhong">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="maRap" id="addPhongRapId" />
+                <div class="modal-header"><h5 class="modal-title">Thêm phòng chiếu - <span id="addPhongRapLabel"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-2"><label class="form-label">Tên phòng</label><input name="tenPhong" class="form-control" required /></div>
+                    <div class="mb-2"><label class="form-label">Sức chứa</label><input name="sucChua" type="number" class="form-control" required min="1" max="200" /><small class="text-muted">Tối đa 200 ghế (mỗi hàng 10 ghế).</small></div>
+                    <div class="mb-2">
+                        <label class="form-label">Loại phòng</label>
+                        <select name="loaiPhong" class="form-select">
+                            <option value="Thuong">Thường</option>
+                            <option value="VIP">VIP</option>
+                            <option value="IMAX">IMAX</option>
+                            <option value="4DX">4DX</option>
+                            <option value="Dolby">Dolby</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> Thêm</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const CAN_EDIT = @((User.IsInRole("QuanLy") || User.IsInRole("Admin")) ? "true" : "false");
+
+    document.querySelectorAll('.btn-edit-rap').forEach(function (b) {
+        b.addEventListener('click', function () {
+            document.getElementById('editRapId').value = b.dataset.id;
+            document.getElementById('editRapTen').value = b.dataset.ten || '';
+            document.getElementById('editRapDiaChi').value = b.dataset.diachi || '';
+            document.getElementById('editRapSdt').value = b.dataset.sdt || '';
+            new bootstrap.Modal(document.getElementById('editRapModal')).show();
+        });
+    });
+
+    function suaPhong(p) {
+        document.getElementById('editPhongId').value = p.maPhong;
+        document.getElementById('editPhongTen').value = p.tenPhong || '';
+        document.getElementById('editPhongSucChua').value = p.sucChua + ' ghế';
+        const sel = document.getElementById('editPhongLoai');
+        sel.value = p.loaiPhong || 'Thuong';
+        if (sel.value !== (p.loaiPhong || 'Thuong')) { sel.add(new Option(p.loaiPhong, p.loaiPhong)); sel.value = p.loaiPhong; }
+        new bootstrap.Modal(document.getElementById('editPhongModal')).show();
+    }
+
+    function xoaPhong(p) {
+        if (!confirm('Xóa phòng "' + p.tenPhong + '"? Toàn bộ ghế của phòng sẽ bị xóa.')) return;
+        const f = document.getElementById('xoaPhongForm');
+        f.action = '/Admin/PhongChieu/Xoa/' + p.maPhong;
+        f.submit();
+    }
+
+    function openAddPhongModal(btn) {
+        document.getElementById('addPhongRapId').value = btn.dataset.maRap;
+        document.getElementById('addPhongRapLabel').textContent = btn.dataset.tenRap;
+        new bootstrap.Modal(document.getElementById('addPhongModal')).show();
+    }
+
+    function loadPhong(maRap, tenRap) {
+        const el = document.getElementById('phongList');
+        el.textContent = 'Đang tải...';
+        fetch('/Admin/RapChieu/' + maRap + '/Phong')
+            .then(r => r.json())
+            .then(list => {
+                el.innerHTML = '';
+                if (list.length === 0) { el.textContent = 'Rạp này chưa có phòng chiếu.'; return; }
+                list.forEach(p => {
+                    const div = document.createElement('div');
+                    div.className = 'border rounded p-2 mb-2';
+                    const strong = document.createElement('strong');
+                    strong.textContent = p.tenPhong;
+                    const small = document.createElement('small');
+                    small.className = 'text-muted d-block';
+                    small.textContent = (p.loaiPhong || '') + ' - ' + p.sucChua + ' ghế';
+                    div.appendChild(strong);
+                    div.appendChild(small);
+                    if (CAN_EDIT) {
+                        const bar = document.createElement('div');
+                        bar.className = 'mt-1';
+                        const bs = document.createElement('button');
+                        bs.type = 'button'; bs.className = 'btn btn-sm btn-outline-primary me-1';
+                        bs.innerHTML = '<i class="fas fa-pen-to-square"></i> Sửa';
+                        bs.addEventListener('click', () => suaPhong(p));
+                        const bx = document.createElement('button');
+                        bx.type = 'button'; bx.className = 'btn btn-sm btn-outline-danger';
+                        bx.innerHTML = '<i class="fas fa-trash-can"></i> Xóa';
+                        bx.addEventListener('click', () => xoaPhong(p));
+                        bar.appendChild(bs); bar.appendChild(bx);
+                        div.appendChild(bar);
+                    }
+                    el.appendChild(div);
+                });
+            });
+    }
+</script>
+}
+
