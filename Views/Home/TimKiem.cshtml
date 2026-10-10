@@ -1,0 +1,146 @@
+@model TimKiemViewModel
+@{
+    ViewData["Title"] = ViewData["Title"] ?? "Tìm kiếm phim - UTC Cinema";
+    var phims = Model.KetQua;
+}
+<div style="background:var(--bg-dark);min-height:calc(100vh - 180px);padding:40px 0">
+<div class="container">
+
+    <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+        <h1 style="font-size:1.5rem;font-weight:800;margin:0;display:flex;align-items:center;gap:10px">
+            <span style="width:34px;height:34px;background:rgba(229,9,20,0.15);border-radius:8px;display:inline-flex;align-items:center;justify-content:center">
+                <i class="fas fa-search" style="color:#e50914;font-size:0.9rem"></i>
+            </span>
+            Kết quả tìm kiếm
+        </h1>
+        @if (phims != null)
+        {
+            <span class="page-badge"><i class="fas fa-film"></i>@phims.TotalCount phim</span>
+        }
+    </div>
+
+    <div class="filter-bar mb-4">
+        <form action="/tim-kiem" method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label-dark">Tên phim</label>
+                <input type="text" name="tenPhim" class="form-control-dark form-control" placeholder="Nhập tên phim..." value="@Model.TenPhimSearch"/>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label-dark">Thể loại</label>
+                <select name="maTheLoai" class="form-control-dark form-select">
+                    <option value="">-- Tất cả --</option>
+                    @foreach (var tl in Model.DanhSachTheLoai)
+                    {
+                        <option value="@tl.Id" selected="@(tl.Id == Model.MaTheLoaiSearch)">@tl.TenTheLoai</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label-dark">Trạng thái</label>
+                <select name="trangThai" class="form-control-dark form-select">
+                    <option value="" selected="@(string.IsNullOrEmpty(Model.TrangThaiSearch))">-- Tất cả --</option>
+                    <option value="Đang chiếu" selected="@(Model.TrangThaiSearch == "Đang chiếu")">Đang chiếu</option>
+                    <option value="Sắp chiếu" selected="@(Model.TrangThaiSearch == "Sắp chiếu")">Sắp chiếu</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn-cinema" style="flex:1;justify-content:center;padding:10px">
+                    <i class="fas fa-search"></i>Tìm
+                </button>
+                <a href="/tim-kiem" class="btn-cinema-outline" style="padding:10px 14px">
+                    <i class="fas fa-times"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+
+    @if (phims != null && phims.Items.Any())
+    {
+        <div class="row g-3">
+            @foreach (var phim in phims.Items)
+            {
+                <div class="col-6 col-md-4 col-lg-3">
+                    <div class="movie-card">
+                        <div class="movie-poster-wrap">
+                            <img src="/images/posters/@(phim.AnhPoster ?? "placeholder.svg")" alt="@phim.TenPhim"
+                                 onerror="this.onerror=null;this.src='/images/posters/placeholder.svg'"/>
+                            @if (!string.IsNullOrEmpty(phim.DoTuoi))
+                            {
+                                <span class="movie-age-badge age-@phim.DoTuoi">@phim.DoTuoi</span>
+                            }
+                            <div class="movie-poster-overlay">
+                                <a href="/phim/@phim.Id" class="btn-cinema-outline" style="padding:8px 14px;font-size:0.8rem">
+                                    <i class="fas fa-info-circle"></i>Chi tiết
+                                </a>
+                            </div>
+                        </div>
+                        <div class="movie-card-body">
+                            <h3 class="movie-title">@phim.TenPhim</h3>
+                            <div class="genre-badges">
+                                @foreach (var tl in phim.TheLoais)
+                                {
+                                    <span class="genre-badge">@tl.TenTheLoai</span>
+                                }
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <span style="font-size:0.78rem;color:#666">
+                                    <i class="fas fa-clock me-1"></i>@phim.ThoiLuong phút
+                                </span>
+                                <span class="badge-status @(phim.TrangThai == "Đang chiếu" ? "badge-success" : "badge-warning")" style="font-size:0.68rem">@phim.TrangThai</span>
+                            </div>
+                            @if (phim.TrangThai == "Đang chiếu")
+                            {
+                                <a href="/phim/@phim.Id" class="btn-cinema" style="font-size:0.8rem;padding:8px 12px;width:100%;justify-content:center">
+                                    <i class="fas fa-ticket-alt"></i>Đặt vé
+                                </a>
+                            }
+                            else
+                            {
+                                <a href="/phim/@phim.Id" class="btn-cinema-outline" style="font-size:0.8rem;padding:8px 12px;width:100%;justify-content:center">
+                                    <i class="fas fa-info-circle"></i>Xem thêm
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (phims.TotalPages > 1)
+        {
+            <div class="d-flex justify-content-center gap-2 mt-4">
+                @if (phims.Page > 0)
+                {
+                    <a href="/tim-kiem?tenPhim=@Model.TenPhimSearch&maTheLoai=@Model.MaTheLoaiSearch&trangThai=@Model.TrangThaiSearch&page=@(phims.Page - 1)" class="btn-cinema-outline" style="padding:8px 16px">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                }
+                @for (int i = 0; i < phims.TotalPages; i++)
+                {
+                    <a href="/tim-kiem?tenPhim=@Model.TenPhimSearch&maTheLoai=@Model.MaTheLoaiSearch&trangThai=@Model.TrangThaiSearch&page=@i"
+                       style="@(i == phims.Page ? "background:#e50914;border-color:#e50914;color:#fff;" : "")"
+                       class="btn-cinema-outline" style="padding:8px 14px;min-width:38px;justify-content:center">@(i + 1)</a>
+                }
+                @if (phims.Page < phims.TotalPages - 1)
+                {
+                    <a href="/tim-kiem?tenPhim=@Model.TenPhimSearch&maTheLoai=@Model.MaTheLoaiSearch&trangThai=@Model.TrangThaiSearch&page=@(phims.Page + 1)" class="btn-cinema-outline" style="padding:8px 16px">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                }
+            </div>
+        }
+    }
+    else
+    {
+        <div class="text-center" style="padding:80px 0">
+            <div style="width:80px;height:80px;background:#111;border:1px solid #1e1e1e;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px">
+                <i class="fas fa-film-slash" style="font-size:2rem;color:#2a2a2a"></i>
+            </div>
+            <h3 style="color:#444;margin-bottom:8px">Không tìm thấy phim nào</h3>
+            <p style="color:#333;margin-bottom:24px;font-size:0.9rem">Thử thay đổi từ khóa hoặc bộ lọc tìm kiếm</p>
+            <a href="/tim-kiem" class="btn-cinema-outline" style="padding:10px 22px"><i class="fas fa-times"></i>Xóa bộ lọc</a>
+        </div>
+    }
+
+</div>
+</div>

@@ -1,0 +1,61 @@
+@using DatVeXemPhim.Models.Entities
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = ViewBag.PageTitle;
+    var danhSachPhim = (List<Phim>)ViewBag.DanhSachPhim;
+
+    string BadgeClass(string? trangThai)
+    {
+        if (string.IsNullOrWhiteSpace(trangThai)) return "bg-warning text-dark";
+        var t = trangThai.ToLower();
+        if (t.Contains("ang")) return "bg-success";
+        if (t.Contains("p chi")) return "bg-info";
+        return "bg-warning text-dark";
+    }
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Quản lý phim</h3>
+    <a class="btn btn-primary" asp-action="Them"><i class="fas fa-plus"></i> Thêm phim</a>
+</div>
+
+<div class="card p-3">
+    <table class="table table-hover align-middle">
+        <thead>
+        <tr>
+            <th>Mã</th><th>Tên phim</th><th>Thời lượng</th><th>Đạo diễn</th><th>Độ tuổi</th><th>Ngày khởi chiếu</th><th>Thể loại</th><th>Trạng thái</th><th></th>
+        </tr>
+        </thead>
+        <tbody>
+        @if (danhSachPhim.Count == 0)
+        {
+            <tr><td colspan="9" class="text-center text-muted">Không có phim nào</td></tr>
+        }
+        @foreach (var phim in danhSachPhim)
+        {
+            <tr>
+                <td>@phim.MaPhim</td>
+                <td>@phim.TenPhim<br /><small class="text-muted">@phim.DaoDien</small></td>
+                <td>@phim.ThoiLuong phút</td>
+                <td>@phim.DaoDien</td>
+                <td><span class="badge age-@phim.DoTuoi">@(string.IsNullOrWhiteSpace(phim.DoTuoi) ? "-" : phim.DoTuoi)</span></td>
+                <td>@(phim.NgayKhoiChieu?.ToString("dd/MM/yyyy") ?? "-")</td>
+                <td>
+                @foreach (var tl in phim.TheLoais)
+                {
+                    <span class="badge bg-light text-dark border me-1">@tl.TenTheLoai</span>
+                }
+                </td>
+                <td><span class="badge @BadgeClass(phim.TrangThai)">@phim.TrangThai</span></td>
+                <td>
+                    <a class="btn btn-sm btn-outline-primary" asp-action="Sua" asp-route-maPhim="@phim.Id"><i class="fas fa-pen-to-square"></i> Sửa</a>
+                    <form method="post" asp-action="Xoa" asp-route-maPhim="@phim.Id" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn xóa phim này?')">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash-can"></i> Xóa</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

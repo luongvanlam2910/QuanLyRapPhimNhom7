@@ -1,0 +1,106 @@
+@using DatVeXemPhim.Models.Entities
+@model DatVeXemPhim.Models.ViewModels.PhimFormDTO
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = ViewBag.PageTitle;
+    var danhSachTheLoai = (List<TheLoai>)ViewBag.DanhSachTheLoai;
+    bool isEdit = ViewBag.IsEdit;
+    string action = isEdit ? Url.Action("Sua", new { maPhim = Model.MaPhim }) ?? "" : Url.Action("Them") ?? "";
+}
+
+<h3 class="mb-3">@(isEdit ? "Sửa phim" : "Thêm phim")</h3>
+
+<div class="card p-4">
+    <form method="post" action="@action" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+        <div class="row">
+            <div class="col-md-8">
+                <div class="mb-3">
+                    <label class="form-label">Tên phim</label>
+                    <input asp-for="TenPhim" class="form-control" />
+                    <span asp-validation-for="TenPhim" class="text-danger"></span>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Thời lượng (phút)</label>
+                        <input asp-for="ThoiLuong" class="form-control" type="number" />
+                        <span asp-validation-for="ThoiLuong" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Đạo diễn</label>
+                        <input asp-for="DaoDien" class="form-control" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Độ tuổi</label>
+                        <select asp-for="DoTuoi" class="form-select">
+                            <option value="">--</option>
+                            <option value="P">P</option>
+                            <option value="K">K</option>
+                            <option value="T13">T13</option>
+                            <option value="T16">T16</option>
+                            <option value="T18">T18</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Ngày khởi chiếu</label>
+                        <input asp-for="NgayKhoiChieu" class="form-control" type="date" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Trạng thái</label>
+                        <select name="trangThai" class="form-select">
+                            <option value="dang-chieu" selected="@(Model.TrangThai == "dang-chieu")">Đang chiếu</option>
+                            <option value="sap-chieu" selected="@(Model.TrangThai == "sap-chieu")">Sắp chiếu</option>
+                            <option value="ngung-chieu" selected="@(Model.TrangThai == "ngung-chieu")">Ngừng chiếu</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Thể loại</label><br />
+                    @foreach (var tl in danhSachTheLoai)
+                    {
+                        var checkedAttr = Model.MaTheLoais.Contains(tl.Id.ToString());
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" name="MaTheLoais" value="@tl.Id" checked="@checkedAttr" id="tl_@tl.Id" />
+                            <label class="form-check-label" for="tl_@tl.Id">@tl.TenTheLoai</label>
+                        </div>
+                    }
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Mô tả</label>
+                    <textarea asp-for="MoTa" class="form-control" rows="4"></textarea>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Poster</label>
+                <div class="mb-2">
+                    @* Trước đây: src="" khi chưa có poster khiến trình duyệt tải lại chính trang hiện tại,
+                       và onerror gán lại đúng URL lỗi cũ (/images/no-poster.png, cũng không tồn tại) gây
+                       vòng lặp request 404 vô hạn, treo trang Thêm/Sửa phim. *@
+                    <img id="posterPreview"
+                         src="@(string.IsNullOrEmpty(Model.AnhPoster) ? "/images/posters/placeholder.svg" : "/images/posters/" + Model.AnhPoster)"
+                         style="width:100%;max-width:220px;"
+                         onerror="this.onerror=null;this.src='/images/posters/placeholder.svg'" />
+                </div>
+                <input type="hidden" asp-for="AnhPoster" id="anhPosterText" />
+                <input type="file" name="posterFile" id="posterFileInput" class="form-control" accept="image/*" onchange="handlePosterFile(this)" />
+            </div>
+        </div>
+        <div class="d-flex gap-2 mt-3">
+            <button type="submit" class="btn btn-primary"><i class="fas @(isEdit ? "fa-floppy-disk" : "fa-plus")"></i> @(isEdit ? "Cập nhật" : "Thêm phim")</button>
+            <a class="btn btn-secondary" asp-action="Index"><i class="fas fa-xmark"></i> Hủy</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+<script>
+    function handlePosterFile(input) {
+        if (input.files && input.files[0]) {
+            document.getElementById('posterPreview').src = URL.createObjectURL(input.files[0]);
+            document.getElementById('anhPosterText').value = input.files[0].name;
+        }
+    }
+</script>
+}

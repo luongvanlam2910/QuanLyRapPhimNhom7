@@ -1,0 +1,97 @@
+@using DatVeXemPhim.Models.Entities
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = ViewBag.PageTitle;
+    var danhSachLichChieu = (List<LichChieu>)ViewBag.DanhSachLichChieu;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Quản lý lịch chiếu</h3>
+    <a class="btn btn-primary" asp-action="Them"><i class="fas fa-plus"></i> Thêm lịch chiếu</a>
+</div>
+
+<div class="card p-3">
+    <table class="table table-hover align-middle">
+        <thead>
+        <tr>
+            <th>Mã</th><th>Phim</th><th>Rạp / Phòng</th><th>Bắt đầu</th><th>Kết thúc</th><th>Giá vé</th><th>Trạng thái</th><th></th>
+        </tr>
+        </thead>
+        <tbody>
+        @if (danhSachLichChieu.Count == 0)
+        {
+            <tr><td colspan="8" class="text-center text-muted">Không có lịch chiếu nào</td></tr>
+        }
+        @foreach (var lc in danhSachLichChieu)
+        {
+            <tr>
+                <td>@lc.MaLich</td>
+                <td>@lc.Phim?.TenPhim</td>
+                <td>@lc.PhongChieu?.RapChieu?.TenRap - @lc.PhongChieu?.TenPhong</td>
+                <td>@lc.ThoiGianBatDau.ToString("HH:mm dd/MM/yy")</td>
+                <td>@lc.ThoiGianKetThuc.ToString("HH:mm dd/MM/yy")</td>
+                <td>@lc.GiaVe.ToString("N0") ₫</td>
+                <td>
+                    <form method="post" asp-action="CapNhatTrangThai" asp-route-maLich="@lc.Id">
+                        @Html.AntiForgeryToken()
+                        <select name="trangThai" class="form-select form-select-sm" data-cu="@lc.TrangThai" disabled="@(lc.TrangThai == "Đã hủy")"
+                                title="@(lc.TrangThai == "Đã hủy" ? "Suất chiếu đã hủy không thể mở lại" : "")"
+                                onchange="if (this.value === 'Đã hủy' &amp;&amp; !confirm('Hủy suất chiếu này? Mọi vé đã bán sẽ bị hủy và hoàn tiền cho khách, không thể mở lại.')) { this.value = this.dataset.cu; return; } this.form.submit()">
+                            <option value="Mở bán" selected="@(lc.TrangThai == "Mở bán")">Mở bán</option>
+                            <option value="Tạm dừng" selected="@(lc.TrangThai == "Tạm dừng")">Tạm dừng</option>
+                            <option value="Đã hủy" selected="@(lc.TrangThai == "Đã hủy")">Đã hủy</option>
+                        </select>
+                    </form>
+                </td>
+                <td class="text-nowrap">
+                    @if (lc.TrangThai != "Đã hủy" && lc.ThoiGianBatDau > DateTime.Now)
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-primary btn-edit-lc"
+                                data-id="@lc.Id" data-phim="@lc.Phim?.TenPhim"
+                                data-bd="@lc.ThoiGianBatDau.ToString("yyyy-MM-ddTHH:mm")" data-kt="@lc.ThoiGianKetThuc.ToString("yyyy-MM-ddTHH:mm")"
+                                data-gia="@lc.GiaVe.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)"><i class="fas fa-pen-to-square"></i> Sửa</button>
+                    }
+                    <form method="post" asp-action="Xoa" asp-route-maLich="@lc.Id" class="d-inline" onsubmit="return confirm('Xóa lịch chiếu này?')">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash-can"></i> Xóa</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+<div class="modal fade" id="editLcModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="Sua">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="maLich" id="editLcId" />
+                <div class="modal-header"><h5 class="modal-title">Sửa lịch chiếu - <span id="editLcPhim"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-2"><label class="form-label">Bắt đầu</label><input type="datetime-local" name="thoiGianBatDau" id="editLcBd" class="form-control" required /></div>
+                    <div class="mb-2"><label class="form-label">Kết thúc</label><input type="datetime-local" name="thoiGianKetThuc" id="editLcKt" class="form-control" required /></div>
+                    <div class="mb-2"><label class="form-label">Giá vé (₫)</label><input type="number" name="giaVe" id="editLcGia" class="form-control" min="0" step="1000" required /></div>
+                    <small class="text-muted">Suất đã có vé bán ra chỉ đổi được giá vé, không đổi được giờ chiếu.</small>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-primary"><i class="fas fa-floppy-disk"></i> Lưu</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+document.querySelectorAll('.btn-edit-lc').forEach(function (b) {
+    b.addEventListener('click', function () {
+        document.getElementById('editLcId').value = b.dataset.id;
+        document.getElementById('editLcPhim').textContent = b.dataset.phim || '';
+        document.getElementById('editLcBd').value = b.dataset.bd;
+        document.getElementById('editLcKt').value = b.dataset.kt;
+        document.getElementById('editLcGia').value = b.dataset.gia;
+        new bootstrap.Modal(document.getElementById('editLcModal')).show();
+    });
+});
+</script>
+}
