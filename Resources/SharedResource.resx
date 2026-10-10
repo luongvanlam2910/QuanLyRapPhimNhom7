@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="TrangChu" xml:space="preserve"><value>Trang chủ</value></data>
+  <data name="Phim" xml:space="preserve"><value>Phim</value></data>
+  <data name="DangChieu" xml:space="preserve"><value>Đang chiếu</value></data>
+  <data name="SapChieu" xml:space="preserve"><value>Sắp chiếu</value></data>
+  <data name="DangNhap" xml:space="preserve"><value>Đăng nhập</value></data>
+  <data name="DangKy" xml:space="preserve"><value>Đăng ký</value></data>
+  <data name="TaiKhoan" xml:space="preserve"><value>Tài khoản</value></data>
+  <data name="LichSuDatVe" xml:space="preserve"><value>Lịch sử đặt vé</value></data>
+  <data name="QuanTri" xml:space="preserve"><value>Quản trị</value></data>
+  <data name="DangXuat" xml:space="preserve"><value>Đăng xuất</value></data>
+  <data name="NgonNgu" xml:space="preserve"><value>Ngôn ngữ</value></data>
+  <data name="TimKiemPhim" xml:space="preserve"><value>Tìm kiếm phim</value></data>
+  <data name="DatVeNgay" xml:space="preserve"><value>Đặt vé ngay</value></data>
+  <data name="BanQuyen" xml:space="preserve"><value>Bản quyền thuộc về UTC Cinema.</value></data>
+</root>

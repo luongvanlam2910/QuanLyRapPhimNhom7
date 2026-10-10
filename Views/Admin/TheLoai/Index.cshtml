@@ -1,0 +1,81 @@
+@using DatVeXemPhim.Models.Entities
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = ViewBag.PageTitle;
+    var danhSach = (List<TheLoai>)ViewBag.DanhSachTheLoai;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Quản lý thể loại</h3>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTlModal"><i class="fas fa-plus"></i> Thêm thể loại</button>
+</div>
+
+<div class="card p-3">
+    <table class="table table-hover align-middle">
+        <thead><tr><th>Mã</th><th>Tên thể loại</th><th>Số phim</th><th></th></tr></thead>
+        <tbody>
+        @if (danhSach.Count == 0)
+        {
+            <tr><td colspan="4" class="text-center text-muted">Chưa có thể loại nào</td></tr>
+        }
+        @foreach (var tl in danhSach)
+        {
+            <tr>
+                <td>@tl.MaTheLoai</td>
+                <td>@tl.TenTheLoai</td>
+                <td>@tl.Phims.Count</td>
+                <td class="text-nowrap">
+                    <button type="button" class="btn btn-sm btn-outline-primary btn-edit-tl" data-id="@tl.Id" data-ten="@tl.TenTheLoai"><i class="fas fa-pen-to-square"></i> Sửa</button>
+                    <form method="post" asp-action="Xoa" asp-route-id="@tl.Id" class="d-inline" onsubmit="return confirm('Xóa thể loại này?')">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash-can"></i> Xóa</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+<div class="modal fade" id="addTlModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="Them">
+                @Html.AntiForgeryToken()
+                <div class="modal-header"><h5 class="modal-title">Thêm thể loại</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-2"><label class="form-label">Tên thể loại</label><input name="tenTheLoai" class="form-control" required /></div>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> Thêm</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editTlModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="Sua">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="editTlId" />
+                <div class="modal-header"><h5 class="modal-title">Sửa thể loại</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-2"><label class="form-label">Tên thể loại</label><input name="tenTheLoai" id="editTlTen" class="form-control" required maxlength="80" /></div>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-primary"><i class="fas fa-floppy-disk"></i> Lưu</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+document.querySelectorAll('.btn-edit-tl').forEach(function (b) {
+    b.addEventListener('click', function () {
+        document.getElementById('editTlId').value = b.dataset.id;
+        document.getElementById('editTlTen').value = b.dataset.ten || '';
+        new bootstrap.Modal(document.getElementById('editTlModal')).show();
+    });
+});
+</script>
+}

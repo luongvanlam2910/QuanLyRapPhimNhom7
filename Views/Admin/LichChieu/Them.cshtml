@@ -1,0 +1,103 @@
+@using DatVeXemPhim.Models.Entities
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = ViewBag.PageTitle;
+    var danhSachPhim = (List<Phim>)ViewBag.DanhSachPhim;
+    var danhSachRap = (List<RapChieu>)ViewBag.DanhSachRap;
+}
+
+<h3 class="mb-3">Thêm lịch chiếu</h3>
+
+<div class="card p-4" style="max-width:700px;">
+    <form method="post" asp-action="Them">
+        @Html.AntiForgeryToken()
+        <div class="mb-3">
+            <label class="form-label">Phim</label>
+            <select name="maPhim" id="maPhimSelect" class="form-select" required>
+                <option value="">-- Chọn phim --</option>
+                @foreach (var p in danhSachPhim)
+                {
+                    <option value="@p.Id" data-duration="@p.ThoiLuong">@p.TenPhim</option>
+                }
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Rạp</label>
+            <select id="rapSelect" class="form-select">
+                <option value="">-- Chọn rạp --</option>
+                @foreach (var r in danhSachRap)
+                {
+                    <option value="@r.Id">@r.TenRap</option>
+                }
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Phòng chiếu</label>
+            <select name="maPhong" id="phongSelect" class="form-select" required>
+                <option value="">-- Chọn rạp trước --</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Giá vé</label>
+            <input type="number" step="1000" name="giaVe" class="form-control" required />
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Thời gian bắt đầu</label>
+                <input type="datetime-local" id="batDau" name="thoiGianBatDau" class="form-control" required />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Thời gian kết thúc</label>
+                <input type="datetime-local" id="ketThuc" name="thoiGianKetThuc" class="form-control" required />
+            </div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Trạng thái</label>
+            <select name="trangThai" class="form-select">
+                <option value="Mở bán">Mở bán</option>
+                <option value="Tạm dừng">Tạm dừng</option>
+                <option value="Đã hủy">Đã hủy</option>
+            </select>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-floppy-disk"></i> Lưu</button>
+            <a class="btn btn-secondary" asp-action="Index"><i class="fas fa-xmark"></i> Hủy</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+<script>
+    function loadPhong(maRap) {
+        const phongSelect = document.getElementById('phongSelect');
+        phongSelect.innerHTML = '<option value="">Đang tải...</option>';
+        if (!maRap) { phongSelect.innerHTML = '<option value="">-- Chọn rạp trước --</option>'; return; }
+        fetch('/Admin/RapChieu/' + maRap + '/Phong')
+            .then(r => r.json())
+            .then(list => {
+                phongSelect.innerHTML = '<option value="">-- Chọn phòng --</option>';
+                list.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.maPhong;
+                    opt.textContent = p.tenPhong + ' (' + p.loaiPhong + ' - ' + p.sucChua + ' ghế)';
+                    phongSelect.appendChild(opt);
+                });
+            });
+    }
+    document.getElementById('rapSelect').addEventListener('change', function () { loadPhong(this.value); });
+
+    function autoFillEndTime() {
+        const sel = document.getElementById('maPhimSelect');
+        const opt = sel.options[sel.selectedIndex];
+        const duration = parseInt(opt?.dataset?.duration || '0', 10);
+        const batDau = document.getElementById('batDau').value;
+        if (!batDau || !duration) return;
+        const start = new Date(batDau);
+        const end = new Date(start.getTime() + (duration + 15) * 60000);
+        const pad = n => n.toString().padStart(2, '0');
+        document.getElementById('ketThuc').value = `${end.getFullYear()}-${pad(end.getMonth()+1)}-${pad(end.getDate())}T${pad(end.getHours())}:${pad(end.getMinutes())}`;
+    }
+    document.getElementById('maPhimSelect').addEventListener('change', autoFillEndTime);
+    document.getElementById('batDau').addEventListener('change', autoFillEndTime);
+</script>
+}
