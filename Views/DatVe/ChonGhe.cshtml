@@ -1,0 +1,276 @@
+@model ChonGheViewModel
+@using System.Text.Json
+@{
+    ViewData["Title"] = ViewData["Title"] ?? "Chọn ghế - UTC Cinema";
+    var lichChieu = Model.LichChieu;
+    var errorMessage = TempData["errorMessage"] as string;
+    var jsonOpts = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+}
+<style>
+.booking-steps { display: flex; align-items: center; justify-content: center; gap: 0; margin-bottom: 32px; padding: 20px 0; background: #111; border-radius: 12px; border: 1px solid #2a2a2a; }
+.booking-step { display: flex; align-items: center; gap: 10px; padding: 0 20px; position: relative; }
+.booking-step:not(:last-child)::after { content: ''; position: absolute; right: -16px; top: 50%; transform: translateY(-50%); width: 32px; height: 2px; background: #2a2a2a; z-index: 1; }
+.booking-step.active:not(:last-child)::after, .booking-step.done:not(:last-child)::after { background: #e50914; }
+.step-num { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; background: #2a2a2a; color: #555; flex-shrink: 0; transition: 0.3s; }
+.booking-step.active .step-num { background: #e50914; color: #fff; box-shadow: 0 0 0 4px rgba(229,9,20,0.2); }
+.booking-step.done .step-num { background: #46d369; color: #fff; }
+.step-label { font-size: 0.82rem; color: #555; font-weight: 500; white-space: nowrap; }
+.booking-step.active .step-label { color: #fff; font-weight: 600; }
+.booking-step.done .step-label { color: #46d369; }
+@@media (max-width: 576px) { .booking-steps { gap: 0; } .booking-step { padding: 0 8px; } .step-label { display: none; } }
+</style>
+<div style="background:var(--bg-dark);min-height:calc(100vh - 180px);padding:28px 0">
+<div class="container-fluid" style="max-width:1440px;padding:0 24px">
+
+    <div class="booking-steps mb-4">
+        <div class="booking-step done"><div class="step-num"><i class="fas fa-film" style="font-size:0.75rem"></i></div><span class="step-label">Chọn phim</span></div>
+        <div class="booking-step active"><div class="step-num">2</div><span class="step-label">Chọn ghế</span></div>
+        <div class="booking-step"><div class="step-num">3</div><span class="step-label">Xác nhận</span></div>
+        <div class="booking-step"><div class="step-num">4</div><span class="step-label">Thanh toán</span></div>
+        <div class="booking-step"><div class="step-num"><i class="fas fa-check" style="font-size:0.75rem"></i></div><span class="step-label">Hoàn tất</span></div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="seat-map-container">
+                <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid #1a1a1a">
+                    <div class="d-flex align-items-center gap-14" style="gap:14px">
+                        <div style="width:54px;height:80px;border-radius:8px;overflow:hidden;flex-shrink:0;box-shadow:0 8px 24px rgba(0,0,0,0.6)">
+                            <img src="/images/posters/@(lichChieu.Phim?.AnhPoster ?? "placeholder.svg")" alt="@lichChieu.Phim?.TenPhim"
+                                 style="width:100%;height:100%;object-fit:cover"
+                                 onerror="this.onerror=null;this.src='/images/posters/placeholder.svg'"/>
+                        </div>
+                        <div style="flex:1">
+                            <h2 style="font-size:1.25rem;font-weight:800;margin-bottom:8px;color:#fff">@lichChieu.Phim?.TenPhim</h2>
+                            <div style="display:flex;flex-wrap:wrap;gap:16px;font-size:0.82rem;color:#666">
+                                <span style="color:#fff;background:rgba(229,9,20,0.15);border:1px solid rgba(229,9,20,0.3);padding:3px 10px;border-radius:6px;font-weight:600">
+                                    <i class="fas fa-clock me-1" style="color:#e50914"></i>@lichChieu.ThoiGianBatDau.ToString("HH:mm")
+                                </span>
+                                <span><i class="fas fa-calendar me-1" style="color:#e50914"></i>@lichChieu.ThoiGianBatDau.ToString("dd/MM/yyyy")</span>
+                                <span><i class="fas fa-building me-1" style="color:#e50914"></i>@lichChieu.PhongChieu?.RapChieu?.TenRap</span>
+                                <span><i class="fas fa-door-open me-1" style="color:#e50914"></i>@lichChieu.PhongChieu?.TenPhong</span>
+                                <span style="color:#f5c518;font-weight:700">
+                                    <i class="fas fa-ticket-alt me-1"></i>@lichChieu.GiaVe.ToString("N0")₫/ghế
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <partial name="_SeatMapBoard" />
+
+                <script>
+                const seatsData = @Html.Raw(JsonSerializer.Serialize(Model.DanhSachGhe, jsonOpts));
+                const basePrice = @lichChieu.GiaVe.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+                const maLich = '@lichChieu.Id';
+                </script>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="countdown-timer" id="countdownBox" style="display:none">
+                <div style="font-size:0.75rem;color:#b3b3b3;margin-bottom:4px"><i class="fas fa-hourglass-half me-1"></i>Thời gian giữ ghế</div>
+                <div class="countdown-time" id="countdownTimer">10:00</div>
+                <div class="countdown-label">Hoàn tất trước khi hết giờ</div>
+            </div>
+
+            <div class="booking-panel">
+                <div class="booking-panel-title"><i class="fas fa-ticket-alt me-2" style="color:#e50914"></i>Thông tin đặt vé</div>
+
+                <div class="booking-info-row"><span class="booking-info-label">Phim</span><span class="booking-info-value" style="max-width:160px;text-align:right;font-size:0.82rem">@lichChieu.Phim?.TenPhim</span></div>
+                <div class="booking-info-row"><span class="booking-info-label">Rạp</span><span class="booking-info-value" style="font-size:0.82rem">@lichChieu.PhongChieu?.RapChieu?.TenRap</span></div>
+                <div class="booking-info-row"><span class="booking-info-label">Phòng</span><span class="booking-info-value">@lichChieu.PhongChieu?.TenPhong</span></div>
+                <div class="booking-info-row"><span class="booking-info-label">Suất chiếu</span><span class="booking-info-value">@lichChieu.ThoiGianBatDau.ToString("HH:mm dd/MM")</span></div>
+                <div class="booking-info-row"><span class="booking-info-label">Giá vé</span><span class="booking-info-value" style="color:#f5c518">@lichChieu.GiaVe.ToString("N0")₫/ghế</span></div>
+
+                <div style="border-top:1px solid #2a2a2a;margin:12px 0 8px"></div>
+
+                <div style="margin-bottom:4px;font-size:0.8rem;color:#666;text-transform:uppercase;letter-spacing:0.5px">
+                    Ghế đã chọn (<span id="selectedCount">0</span>)
+                </div>
+                <div id="selectedSeatsList">
+                    <span class="text-muted-utc" style="font-size:0.85rem">Chưa chọn ghế nào</span>
+                </div>
+
+                <div style="margin-top:16px;padding-top:12px;border-top:1px solid #2a2a2a">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span style="color:#b3b3b3;font-size:0.9rem">Tạm tính</span>
+                        <span class="booking-total" id="totalPrice">0 ₫</span>
+                    </div>
+                </div>
+
+                <form action="/dat-ve/xac-nhan" method="get" id="bookingForm" style="margin-top:16px">
+                    <input type="hidden" name="maLich" value="@lichChieu.Id"/>
+                    <input type="hidden" name="maGhes" id="maGhesInput" value=""/>
+                    <button type="submit" id="submitBtn" class="btn-cinema w-100" disabled
+                            style="padding:13px;font-size:0.95rem;justify-content:center;opacity:0.5;cursor:not-allowed"
+                            onclick="return validateAndSubmit()">
+                        <i class="fas fa-arrow-right"></i>Tiếp tục chọn khuyến mãi
+                    </button>
+                </form>
+
+                <div style="text-align:center;margin-top:12px;font-size:0.75rem;color:#444">
+                    <i class="fas fa-shield-alt me-1"></i>Ghế sẽ được giữ trong 10 phút
+                </div>
+
+                <a href="/phim/@lichChieu.PhimId" class="btn-cinema-outline w-100 mt-2" style="justify-content:center;padding:10px;font-size:0.85rem">
+                    <i class="fas fa-arrow-left"></i>Quay lại
+                </a>
+            </div>
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert mt-3" style="background:rgba(229,9,20,0.1);border:1px solid rgba(229,9,20,0.3);color:#ff4d4d;border-radius:10px;padding:12px 16px;font-size:0.85rem">
+                    <i class="fas fa-exclamation-circle me-2"></i>@errorMessage
+                </div>
+            }
+
+            <div class="card-dark mt-3" style="padding:16px;font-size:0.82rem">
+                <div style="font-weight:700;margin-bottom:10px;color:#b3b3b3;text-transform:uppercase;font-size:0.72rem;letter-spacing:1px">
+                    <i class="fas fa-info-circle me-1" style="color:#5b9bd5"></i>Hướng dẫn
+                </div>
+                <div style="color:#666;line-height:1.8">
+                    • Nhấn vào ghế để <span style="color:#ff6b35">chọn/bỏ chọn</span><br>
+                    • Tối đa <strong style="color:#fff">8 ghế</strong> mỗi lần đặt<br>
+                    • Ghế <span style="color:#f5c518">VIP</span> tính giá +30%<br>
+                    • Ghế <span style="color:#9b59b6">Đôi</span> tính giá +50%
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+@section Scripts {
+<script src="~/js/seat-grid.js" asp-append-version="true"></script>
+<script>
+const MAX_SEATS = 8;
+
+document.addEventListener('DOMContentLoaded', function() {
+    SeatGrid.render(document.getElementById('seatContainer'), seatsData);
+    document.querySelectorAll('.seat:not(:disabled)').forEach(b => b.dataset.bound = '1'); // SeatMap.init gắn click cho các ghế này
+    SeatMap.init(basePrice);
+});
+
+function validateAndSubmit() {
+    const maGhes = SeatMap.selectedSeats;
+    if (maGhes.length === 0) {
+        showToast('Vui lòng chọn ít nhất 1 ghế', 'warning');
+        return false;
+    }
+
+    const submitBtn = document.getElementById('submitBtn');
+    if (submitBtn) submitBtn.disabled = true;
+    showLoading();
+
+    const params = new URLSearchParams();
+    params.append('maLich', maLich);
+    maGhes.forEach(maGhe => params.append('maGhes', maGhe));
+
+    fetch('/dat-ve/giu-ghe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString()
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) {
+                showToast(data.message || 'Không thể giữ ghế, vui lòng thử lại', 'error');
+                if (submitBtn) submitBtn.disabled = false;
+                hideLoading();
+                setTimeout(() => window.location.reload(), 1500);
+                return;
+            }
+            proceeding = true; // đang sang bước xác nhận: giữ nguyên ghế, không nhả khi rời trang
+            const form = document.getElementById('bookingForm');
+            form.querySelectorAll('input[name="maGhes"]').forEach(i => i.remove());
+            maGhes.forEach(maGhe => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'maGhes';
+                input.value = maGhe;
+                form.appendChild(input);
+            });
+            form.submit();
+        })
+        .catch(() => {
+            showToast('Lỗi kết nối, vui lòng thử lại', 'error');
+            if (submitBtn) submitBtn.disabled = false;
+            hideLoading();
+        });
+
+    return false;
+}
+
+const origInit = SeatMap.init.bind(SeatMap);
+SeatMap.init = function(bp) {
+    origInit(bp);
+};
+
+const origToggle = SeatMap.toggleSeat.bind(SeatMap);
+SeatMap.toggleSeat = function(seat) {
+    const maGhe = seat.dataset.maGhe;
+    const isSelected = seat.classList.contains('seat-selected');
+    if (!isSelected && SeatMap.selectedSeats.length >= MAX_SEATS) {
+        showToast(`Bạn chỉ có thể chọn tối đa ${MAX_SEATS} ghế`, 'warning');
+        return;
+    }
+    origToggle(seat);
+    syncSubmitButton();
+    // Khóa ghế NGAY khi chọn (người khác sẽ thấy "Đang giữ"), nhả ngay khi bỏ chọn.
+    if (!isSelected) holdSeat(seat); else postSeats('/dat-ve/nha-ghe', [maGhe]);
+};
+
+function syncSubmitButton() {
+    const btn = document.getElementById('submitBtn');
+    if (btn) {
+        const hasSeats = SeatMap.selectedSeats.length > 0;
+        btn.disabled = !hasSeats;
+        btn.style.opacity = hasSeats ? '1' : '0.5';
+        btn.style.cursor = hasSeats ? 'pointer' : 'not-allowed';
+    }
+}
+
+let proceeding = false;
+
+function postSeats(url, maGhes) {
+    const params = new URLSearchParams();
+    params.append('maLich', maLich);
+    (maGhes || []).forEach(g => params.append('maGhes', g));
+    return fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString()
+    }).then(r => r.json());
+}
+
+function holdSeat(seat) {
+    postSeats('/dat-ve/giu-ghe', [seat.dataset.maGhe])
+        .then(data => {
+            if (data.success) return;
+            // Ghế vừa bị người khác lấy: bỏ chọn và cập nhật lại sơ đồ.
+            origToggle(seat);
+            syncSubmitButton();
+            showToast(data.message || 'Ghế này vừa được người khác giữ', 'warning');
+            refreshSeatStates();
+        })
+        .catch(() => {});
+}
+
+// Làm mới trạng thái ghế định kỳ: thấy ngay ghế người khác vừa giữ/đặt, và ghế vừa được nhả.
+function refreshSeatStates() {
+    fetch('/dat-ve/trang-thai-ghe/' + maLich, { cache: 'no-store' })
+        .then(r => r.json())
+        .then(list => SeatGrid.applyState(list, btn => {
+            if (!btn.dataset.bound) { btn.dataset.bound = '1'; btn.addEventListener('click', () => SeatMap.toggleSeat(btn)); }
+        }))
+        .catch(() => {});
+}
+setInterval(refreshSeatStates, 4000);
+
+// Rời trang mà chưa sang bước xác nhận: trả ghế đang giữ cho người khác.
+window.addEventListener('pagehide', function () {
+    if (proceeding || SeatMap.selectedSeats.length === 0) return;
+    navigator.sendBeacon('/dat-ve/nha-ghe', new URLSearchParams({ maLich: maLich }));
+});
+</script>
+}

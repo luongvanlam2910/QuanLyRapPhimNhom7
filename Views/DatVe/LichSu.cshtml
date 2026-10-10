@@ -1,0 +1,119 @@
+@model LichSuViewModel
+@{
+    ViewData["Title"] = ViewData["Title"] ?? "Lịch sử đặt vé - UTC Cinema";
+    var danhSachDatVe = Model.DanhSachDatVe;
+}
+<style>
+.ticket-row { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 16px; transition: var(--transition); position: relative; overflow: hidden; }
+.ticket-row::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 4px 0 0 4px; }
+.ticket-row.paid::before { background: var(--green); }
+.ticket-row.pending::before { background: var(--gold); }
+.ticket-row.cancelled::before { background: var(--primary); }
+.ticket-row:hover { border-color: #333; transform: translateX(2px); }
+.ticket-movie-title { font-size: 1rem; font-weight: 700; margin-bottom: 8px; color: #fff; }
+.ticket-meta { font-size: 0.82rem; color: #666; }
+.ticket-meta i { width: 14px; color: #444; }
+.ticket-code { font-family: monospace; font-size: 0.75rem; color: #e50914; font-weight: 700; background: rgba(229,9,20,0.08); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(229,9,20,0.15); }
+.filter-tab { display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px; border-radius: 20px; border: 1px solid var(--border-light); background: var(--bg-card2); color: var(--text-secondary); font-size: 0.82rem; font-weight: 500; cursor: pointer; transition: var(--transition); text-decoration: none; }
+.filter-tab:hover, .filter-tab.active { background: rgba(229,9,20,0.1); border-color: rgba(229,9,20,0.4); color: #fff; }
+.seat-chip { display: inline-block; background: rgba(255,107,53,0.15); border: 1px solid rgba(255,107,53,0.3); color: #ff6b35; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+</style>
+<div style="background:var(--bg-dark);min-height:calc(100vh - 180px);padding:40px 0">
+<div class="container" style="max-width:900px">
+
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+        <div>
+            <h1 style="font-size:1.4rem;font-weight:700;margin:0"><i class="fas fa-history me-2" style="color:#e50914"></i>Lịch sử đặt vé</h1>
+            <p style="color:#555;font-size:0.85rem;margin-top:4px">Xem và quản lý các đơn đặt vé của bạn</p>
+        </div>
+        <a href="/tai-khoan" class="btn-cinema-outline" style="padding:8px 16px;font-size:0.85rem"><i class="fas fa-arrow-left"></i>Tài khoản</a>
+    </div>
+
+    <div class="d-flex gap-2 flex-wrap mb-4">
+        <a href="/dat-ve/lich-su?trangThai=" class="filter-tab @(string.IsNullOrEmpty(Model.TrangThaiFilter) ? "active" : "")">
+            <i class="fas fa-list"></i>Tất cả
+            <span style="background:rgba(255,255,255,0.1);border-radius:10px;padding:0 6px;font-size:0.72rem">@danhSachDatVe.Count</span>
+        </a>
+        <a href="/dat-ve/lich-su?trangThai=Đã thanh toán" class="filter-tab @(Model.TrangThaiFilter == "Đã thanh toán" ? "active" : "")">
+            <i class="fas fa-check-circle" style="color:#46d369"></i>Đã thanh toán
+        </a>
+        <a href="/dat-ve/lich-su?trangThai=Chờ thanh toán" class="filter-tab @(Model.TrangThaiFilter == "Chờ thanh toán" ? "active" : "")">
+            <i class="fas fa-clock" style="color:#f5c518"></i>Chờ thanh toán
+        </a>
+        <a href="/dat-ve/lich-su?trangThai=Đã hủy" class="filter-tab @(Model.TrangThaiFilter == "Đã hủy" ? "active" : "")">
+            <i class="fas fa-times-circle" style="color:#e50914"></i>Đã hủy
+        </a>
+    </div>
+
+    @if (!danhSachDatVe.Any())
+    {
+        <div class="card-dark text-center" style="padding:70px 40px">
+            <div style="width:80px;height:80px;background:#1a1a1a;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px">
+                <i class="fas fa-ticket-alt" style="font-size:2rem;color:#333"></i>
+            </div>
+            <h3 style="color:#555;margin-bottom:8px">Chưa có đơn đặt vé nào</h3>
+            <p style="color:#444;font-size:0.88rem;margin-bottom:24px">Hãy chọn phim và đặt vé để xem lịch sử ở đây!</p>
+            <a href="/" class="btn-cinema" style="display:inline-flex"><i class="fas fa-film"></i>Khám phá phim ngay</a>
+        </div>
+    }
+
+    @foreach (var dv in danhSachDatVe)
+    {
+        var veDauTien = dv.Ves != null && dv.Ves.Any() ? dv.Ves[0] : null;
+        var rowClass = dv.TrangThai == "Đã thanh toán" ? "paid" : dv.TrangThai == "Chờ thanh toán" ? "pending" : "cancelled";
+        <div class="ticket-row @rowClass">
+            <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+                <div style="flex:1;min-width:0">
+                    <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                        <span class="ticket-code">@dv.MaDat</span>
+                        <span class="badge-status @(dv.TrangThai == "Đã thanh toán" ? "badge-success" : dv.TrangThai == "Đã hủy" ? "badge-danger" : "badge-warning")">@dv.TrangThai</span>
+                        <span style="font-size:0.75rem;color:#555"><i class="fas fa-clock me-1"></i>@dv.NgayDat.ToString("HH:mm dd/MM/yyyy")</span>
+                    </div>
+
+                    @if (veDauTien != null)
+                    {
+                        <div>
+                            <div class="ticket-movie-title">@veDauTien.LichChieu?.Phim?.TenPhim</div>
+                            <div class="ticket-meta mb-2">
+                                <div class="mb-1">
+                                    <i class="fas fa-building me-1"></i>@veDauTien.LichChieu?.PhongChieu?.RapChieu?.TenRap
+                                    <span style="color:#444;margin:0 6px">|</span>
+                                    <i class="fas fa-door-open me-1"></i>@veDauTien.LichChieu?.PhongChieu?.TenPhong
+                                </div>
+                                <div><i class="fas fa-calendar me-1"></i>@veDauTien.LichChieu?.ThoiGianBatDau.ToString("HH:mm - dddd, dd/MM/yyyy")</div>
+                            </div>
+                            <div class="d-flex flex-wrap gap-1">
+                                @foreach (var ve in dv.Ves)
+                                {
+                                    <span class="seat-chip">@(ve.Ghe?.HangGhe)@(ve.Ghe?.SoGhe)</span>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="text-end" style="flex-shrink:0">
+                    <div style="font-size:1.3rem;font-weight:800;color:#f5c518;margin-bottom:8px">@dv.TongTien.ToString("N0")₫</div>
+                    <div style="font-size:0.75rem;color:#555;margin-bottom:12px">@(dv.Ves?.Count ?? 0) vé</div>
+                    <div class="d-flex gap-2 justify-content-end flex-wrap">
+                        <a href="/dat-ve/ket-qua/@dv.MaDat" class="btn-cinema-outline" style="font-size:0.78rem;padding:6px 14px">
+                            <i class="fas fa-qrcode"></i>Xem vé
+                        </a>
+                        @if (dv.TrangThai == "Chờ thanh toán")
+                        {
+                            <form action="/dat-ve/huy/@dv.MaDat" method="post" style="display:inline" onsubmit="return confirm('Bạn có chắc muốn hủy đơn này?')">
+                                @Html.AntiForgeryToken()
+                                <button type="submit"
+                                        style="background:transparent;border:1px solid rgba(229,9,20,0.4);color:#e50914;padding:6px 14px;border-radius:8px;font-size:0.78rem;cursor:pointer;display:flex;align-items:center;gap:6px">
+                                    <i class="fas fa-times"></i>Hủy đơn
+                                </button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+</div>
+</div>

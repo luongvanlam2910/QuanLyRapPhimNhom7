@@ -1,0 +1,88 @@
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = ViewBag.PageTitle;
+}
+
+@Html.AntiForgeryToken()
+<h3 class="mb-3">Soát vé</h3>
+
+<div class="row">
+    <div class="col-md-5">
+        <div class="card p-4">
+            <label class="form-label">Nhập mã vé</label>
+            <div class="input-group mb-3">
+                <input type="text" id="maVeInput" class="form-control form-control-lg" placeholder="VE000123" autofocus />
+                <button class="btn btn-secondary" type="button" onclick="traCuu()"><i class="fas fa-magnifying-glass"></i> Tra cứu</button>
+            </div>
+            <div class="text-muted small">Nhập mã vé in trên vé điện tử hoặc vé in tại quầy, nhấn Enter hoặc bấm "Tra cứu".</div>
+        </div>
+    </div>
+    <div class="col-md-7">
+        <div class="card p-4" id="ketQuaCard" style="display:none">
+            <div id="ketQuaNoiDung"></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+    const maVeInput = document.getElementById('maVeInput');
+    maVeInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); traCuu(); } });
+
+    function badgeTrangThai(tt) {
+        if (tt === 'Đã đặt') return '<span class="badge bg-success">Chưa soát</span>';
+        if (tt === 'Đã sử dụng') return '<span class="badge bg-secondary">Đã soát</span>';
+        if (tt === 'Đã hủy') return '<span class="badge bg-danger">Đã hủy</span>';
+        return '<span class="badge bg-light text-dark">' + (tt ?? '') + '</span>';
+    }
+
+    function renderKetQua(kq, choPhepXacNhan) {
+        const card = document.getElementById('ketQuaCard');
+        const noiDung = document.getElementById('ketQuaNoiDung');
+        card.style.display = 'block';
+
+        if (!kq.maVe) {
+            noiDung.innerHTML = `<div class="alert alert-danger mb-0">${kq.thongBao}</div>`;
+            return;
+        }
+
+        const mauVien = kq.hopLe ? 'border-success' : 'border-danger';
+        card.className = 'card p-4 ' + mauVien;
+
+        noiDung.innerHTML = `
+            <h5>${kq.tenPhim ?? ''} ${kq.doTuoiPhim ? '<span class="badge bg-warning text-dark">' + kq.doTuoiPhim + '</span>' : ''}</h5>
+            <div class="text-muted mb-2">${kq.tenRap ?? ''} - ${kq.tenPhong ?? ''} - Ghế ${kq.hangGhe ?? ''}${kq.soGhe ?? ''} (${kq.loaiGhe ?? ''})</div>
+            <div class="mb-2">Suất chiếu: <strong>${kq.thoiGianChieu ? new Date(kq.thoiGianChieu).toLocaleString('vi-VN') : ''}</strong></div>
+            <div class="mb-3">Trạng thái vé: ${badgeTrangThai(kq.trangThaiVe)}</div>
+            <div class="alert ${kq.hopLe ? 'alert-success' : 'alert-danger'}">${kq.thongBao}</div>
+            ${choPhepXacNhan && kq.hopLe ? '<button class="btn btn-primary btn-lg w-100" onclick="xacNhan()"><i class="fas fa-circle-check"></i> Xác nhận cho vào rạp</button>' : ''}
+        `;
+    }
+
+    function traCuu() {
+        const maVe = maVeInput.value.trim();
+        if (!maVe) return;
+        const fd = new FormData();
+        fd.append('maVe', maVe);
+        fd.append('__RequestVerificationToken', tokenInput.value);
+        fetch('/Admin/SoatVe/TraCuu', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(kq => renderKetQua(kq, true));
+    }
+
+    function xacNhan() {
+        const maVe = maVeInput.value.trim();
+        const fd = new FormData();
+        fd.append('maVe', maVe);
+        fd.append('__RequestVerificationToken', tokenInput.value);
+        fetch('/Admin/SoatVe/XacNhan', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(kq => {
+                renderKetQua(kq, false);
+                maVeInput.value = '';
+                maVeInput.focus();
+            });
+    }
+</script>
+}

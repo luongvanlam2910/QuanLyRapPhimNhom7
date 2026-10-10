@@ -1,0 +1,211 @@
+@using System.Text.Json
+@using DatVeXemPhim.Models.Entities
+@using DatVeXemPhim.Models.ViewModels
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = ViewBag.PageTitle;
+    var danhSachSuat = (List<LichChieu>)ViewBag.DanhSachSuatHomNay;
+    var lichChieuChon = ViewBag.LichChieuChon as LichChieu;
+    var danhSachGhe = ViewBag.DanhSachGhe as List<SeatStatusDto> ?? new List<SeatStatusDto>();
+    var danhSachKM = ViewBag.KhuyenMais as List<KhuyenMai>;
+    var jsonOpts = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+}
+
+<h3 class="mb-3">Bán vé tại quầy</h3>
+
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="card p-3">
+            <h6>Suất chiếu hôm nay</h6>
+            @if (danhSachSuat.Count == 0)
+            {
+                <p class="text-muted">Không có suất chiếu nào hôm nay.</p>
+            }
+            <div class="list-group" data-paged-list data-page-size="6" data-group-label="Phòng" data-item="a.list-group-item">
+                @foreach (var lc in danhSachSuat)
+                {
+                    var active = lichChieuChon?.Id == lc.Id;
+                    <a asp-action="Index" asp-route-maLich="@lc.Id" data-group="@lc.PhongChieu?.TenPhong" class="list-group-item list-group-item-action @(active ? "active" : "")">
+                        <div class="fw-bold">@lc.Phim?.TenPhim</div>
+                        <small>@lc.PhongChieu?.TenPhong - @lc.ThoiGianBatDau.ToString("HH:mm")</small>
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        @if (lichChieuChon == null)
+        {
+            <div class="card p-4 text-center text-muted">Chọn một suất chiếu bên trái để bán vé.</div>
+        }
+        else
+        {
+            <form method="post" asp-action="Ban" asp-controller="AdminBanVe" id="banVeForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="maLich" value="@lichChieuChon.Id" />
+                <div id="maGhesInputs"></div>
+
+                <div class="seat-map-container">
+                    <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid #1a1a1a">
+                        <div class="d-flex align-items-center" style="gap:14px">
+                            <div style="width:54px;height:80px;border-radius:8px;overflow:hidden;flex-shrink:0;box-shadow:0 8px 24px rgba(0,0,0,0.6)">
+                                <img src="/images/posters/@(lichChieuChon.Phim?.AnhPoster ?? "placeholder.svg")" alt="@lichChieuChon.Phim?.TenPhim"
+                                     style="width:100%;height:100%;object-fit:cover"
+                                     onerror="this.onerror=null;this.src='/images/posters/placeholder.svg'" />
+                            </div>
+                            <div style="flex:1">
+                                <h2 style="font-size:1.25rem;font-weight:800;margin-bottom:8px;color:#fff">
+                                    @lichChieuChon.Phim?.TenPhim
+                                    <span class="badge bg-warning text-dark" style="font-size:0.7rem;vertical-align:middle">@lichChieuChon.Phim?.DoTuoi</span>
+                                </h2>
+                                <div style="display:flex;flex-wrap:wrap;gap:16px;font-size:0.82rem;color:#999">
+                                    <span style="color:#fff;background:rgba(229,9,20,0.15);border:1px solid rgba(229,9,20,0.3);padding:3px 10px;border-radius:6px;font-weight:600">
+                                        <i class="fas fa-clock me-1" style="color:#e50914"></i>@lichChieuChon.ThoiGianBatDau.ToString("HH:mm")
+                                    </span>
+                                    <span><i class="fas fa-calendar me-1" style="color:#e50914"></i>@lichChieuChon.ThoiGianBatDau.ToString("dd/MM/yyyy")</span>
+                                    <span><i class="fas fa-building me-1" style="color:#e50914"></i>@lichChieuChon.PhongChieu?.RapChieu?.TenRap</span>
+                                    <span><i class="fas fa-door-open me-1" style="color:#e50914"></i>@lichChieuChon.PhongChieu?.TenPhong</span>
+                                    <span style="color:#f5c518;font-weight:700"><i class="fas fa-ticket-alt me-1"></i>@lichChieuChon.GiaVe.ToString("N0")₫/ghế</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* Cùng một sơ đồ ghế với trang khách hàng *@
+                    <partial name="_SeatMapBoard" />
+                </div>
+
+                <div class="card p-3 mt-3">
+                    <div class="d-flex justify-content-between flex-wrap gap-2 mb-3">
+                        <div>Ghế đã chọn: <strong id="gheDaChon">chưa chọn</strong></div>
+                        <div>Tạm tính: <strong id="tamTinh" style="color:#f5c518">0 ₫</strong>
+                            <small class="text-muted">(chưa tính khuyến mãi)</small></div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Tên khách (vãng lai)</label>
+                            <input name="tenKhach" class="form-control" placeholder="Khách vãng lai" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">SĐT khách</label>
+                            <input name="sdtKhach" class="form-control" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Khuyến mãi</label>
+                            <select name="maKm" class="form-select">
+                                <option value="">-- Không áp dụng --</option>
+                                @foreach (var km in danhSachKM ?? new())
+                                {
+                                    <option value="@km.Id">@km.TenKm</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Phương thức thanh toán</label>
+                        <select name="phuongThucThanhToan" class="form-select" style="max-width:220px">
+                            <option>Tiền mặt</option>
+                            <option>Thẻ ngân hàng</option>
+                            <option>Ví điện tử</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" id="btnBan" class="btn btn-primary" disabled><i class="fas fa-ticket"></i> Xác nhận bán vé &amp; in vé</button>
+                </div>
+            </form>
+        }
+    </div>
+</div>
+
+@section Scripts {
+@if (lichChieuChon != null)
+{
+<script src="~/js/seat-grid.js" asp-append-version="true"></script>
+<script>
+(function () {
+    const MA_LICH = @lichChieuChon.Id;
+    const BASE_PRICE = @lichChieuChon.GiaVe.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+    const MAX_SEATS = 8;
+    const seatsData = @Html.Raw(JsonSerializer.Serialize(danhSachGhe, jsonOpts));
+    const chon = new Map(); // gheId -> { ten, gia }
+    let dangBan = false;    // đang gửi form bán vé: không nhả ghế khi rời trang
+
+    function gia(loai) {
+        if (loai === 'VIP') return Math.round(BASE_PRICE * 1.3);
+        if (loai === 'Đôi') return Math.round(BASE_PRICE * 1.5);
+        return BASE_PRICE;
+    }
+    function post(url, ids) {
+        const p = new URLSearchParams();
+        p.append('maLich', MA_LICH);
+        (ids || []).forEach(i => p.append('maGhes', i));
+        return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: p.toString() }).then(r => r.json());
+    }
+    function capNhatTomTat() {
+        const holder = document.getElementById('maGhesInputs');
+        holder.innerHTML = '';
+        let tong = 0;
+        chon.forEach((v, id) => {
+            tong += v.gia;
+            const i = document.createElement('input');
+            i.type = 'hidden'; i.name = 'maGhes'; i.value = id;
+            holder.appendChild(i);
+        });
+        document.getElementById('gheDaChon').textContent = chon.size ? [...chon.values()].map(v => v.ten).join(', ') : 'chưa chọn';
+        document.getElementById('tamTinh').textContent = tong.toLocaleString('vi-VN') + ' ₫';
+        document.getElementById('btnBan').disabled = chon.size === 0;
+    }
+    function boChon(btn) {
+        const id = btn.dataset.maGhe;
+        btn.classList.remove('seat-selected');
+        btn.classList.add(SeatGrid.loaiClass(btn.dataset.loaiGhe));
+        chon.delete(id);
+    }
+    function bam(btn) {
+        const id = btn.dataset.maGhe;
+        if (btn.classList.contains('seat-selected')) {
+            boChon(btn); capNhatTomTat();
+            post('/Admin/BanVe/nha-ghe', [id]);
+            return;
+        }
+        if (chon.size >= MAX_SEATS) { if (typeof showToast === 'function') showToast('Mỗi đơn tối đa ' + MAX_SEATS + ' ghế', 'warning'); return; }
+        const loai = btn.dataset.loaiGhe || 'Thường';
+        btn.classList.remove(SeatGrid.loaiClass(loai));
+        btn.classList.add('seat-selected');
+        chon.set(id, { ten: btn.dataset.hang + btn.dataset.so, gia: gia(loai) });
+        capNhatTomTat();
+        // Khóa ghế ngay khi chọn để quầy khác / khách online không đặt trùng.
+        post('/Admin/BanVe/giu-ghe', [id]).then(d => {
+            if (d.success) return;
+            boChon(btn); capNhatTomTat();
+            if (typeof showToast === 'function') showToast(d.message || 'Ghế vừa được người khác giữ', 'warning');
+            lamMoi();
+        }).catch(() => {});
+    }
+    function gan(btn) {
+        if (btn.dataset.bound) return;
+        btn.dataset.bound = '1';
+        btn.addEventListener('click', () => bam(btn));
+    }
+
+    SeatGrid.render(document.getElementById('seatContainer'), seatsData);
+    document.querySelectorAll('.seat:not(:disabled)').forEach(gan);
+
+    function lamMoi() {
+        fetch('/Admin/BanVe/trang-thai-ghe/' + MA_LICH, { cache: 'no-store' }).then(r => r.json())
+            .then(list => SeatGrid.applyState(list, gan)).catch(() => {});
+    }
+    setInterval(lamMoi, 4000);
+
+    document.getElementById('banVeForm').addEventListener('submit', function () { dangBan = true; });
+    window.addEventListener('pagehide', function () {
+        if (dangBan || chon.size === 0) return;
+        navigator.sendBeacon('/Admin/BanVe/nha-ghe', new URLSearchParams({ maLich: MA_LICH }));
+    });
+})();
+</script>
+}
+}
