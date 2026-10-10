@@ -1,0 +1,87 @@
+@using DatVeXemPhim.Models.ViewModels
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = ViewBag.PageTitle;
+    var stats = (DashboardStatsDto)ViewBag.Stats;
+    var doanhThuPhim = (List<DoanhThuPhimDto>)ViewBag.DoanhThuPhim;
+    var doanhThuPhuongThuc = (List<DoanhThuPhuongThucDto>)ViewBag.DoanhThuPhuongThuc;
+}
+
+<div class="topbar d-flex justify-content-between align-items-center mb-3">
+    <h3>Dashboard</h3>
+    <span id="clockNow">@DateTime.Now.ToString("HH:mm - dd/MM/yyyy")</span>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card p-3">
+            <div class="text-muted">Vé đã bán</div>
+            <h4>@stats.TongVeBan</h4>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3">
+            <div class="text-muted">Tổng doanh thu</div>
+            <h4>@stats.TongDoanhThu.ToString("N0") ₫</h4>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3">
+            <div class="text-muted">Tổng phim</div>
+            <h4>@stats.TongPhim</h4>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3">
+            <div class="text-muted">Khách hàng</div>
+            <h4>@stats.TongKhachHang</h4>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-7">
+        <div class="card p-3">
+            <h5>Doanh thu theo phim</h5>
+            <canvas id="revenueChart" height="120"></canvas>
+        </div>
+    </div>
+    <div class="col-md-5">
+        <div class="card p-3">
+            <h5>Doanh thu theo phương thức</h5>
+            <canvas id="paymentChart" height="120"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="card p-3 mb-4">
+    <h5>Tình trạng đặt vé</h5>
+    <span class="badge bg-success me-2">Đã thanh toán: @stats.DaDatVe</span>
+    <span class="badge bg-warning text-dark">Chờ thanh toán: @stats.ChoThanhToan</span>
+</div>
+
+<div class="d-flex gap-2">
+    <a class="btn btn-primary" href="/Admin/Phim/Them"><i class="fas fa-plus"></i> Thêm phim</a>
+    <a class="btn btn-primary" href="/Admin/LichChieu/Them"><i class="fas fa-plus"></i> Thêm lịch chiếu</a>
+    <a class="btn btn-secondary" href="/Admin/BaoCao"><i class="fas fa-chart-line"></i> Xem báo cáo</a>
+</div>
+
+@section Scripts {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+    const phimLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(doanhThuPhim.Select(x => x.TenPhim)));
+    const phimData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(doanhThuPhim.Select(x => x.TongDoanhThu)));
+    new Chart(document.getElementById('revenueChart'), {
+        type: 'bar',
+        data: { labels: phimLabels, datasets: [{ label: 'Doanh thu', data: phimData, backgroundColor: '#4e73df' }] },
+        options: { scales: { y: { ticks: { callback: v => (v / 1000000).toFixed(1).replace(/\.0$/, '') + 'M' } } } }
+    });
+
+    const ptLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(doanhThuPhuongThuc.Select(x => x.PhuongThuc)));
+    const ptData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(doanhThuPhuongThuc.Select(x => x.TongTien)));
+    new Chart(document.getElementById('paymentChart'), {
+        type: 'doughnut',
+        data: { labels: ptLabels, datasets: [{ data: ptData, backgroundColor: ['#4e73df','#1cc88a','#36b9cc','#f6c23e','#e74a3b'] }] }
+    });
+</script>
+}

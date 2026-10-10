@@ -1,0 +1,173 @@
+@using DatVeXemPhim.Models.Entities
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = ViewBag.PageTitle;
+    var danhSachNV = (List<NhanVien>)ViewBag.DanhSachNV;
+    var danhSachRap = (List<RapChieu>)ViewBag.DanhSachRap;
+    var danhSachPhongBan = (List<PhongBan>)ViewBag.DanhSachPhongBan;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Quản lý nhân viên</h3>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStaffModal"><i class="fas fa-plus"></i> Thêm nhân viên</button>
+</div>
+
+<div class="card p-3">
+    <table class="table table-hover align-middle">
+        <thead><tr><th>Mã</th><th>Họ tên</th><th>Chức vụ</th><th>Phòng ban</th><th>Rạp</th><th>SĐT</th><th>Email</th><th>Trạng thái</th><th></th></tr></thead>
+        <tbody>
+        @if (danhSachNV.Count == 0)
+        {
+            <tr><td colspan="9" class="text-center text-muted">Không có nhân viên nào</td></tr>
+        }
+        @foreach (var nv in danhSachNV)
+        {
+            <tr>
+                <td>@nv.MaNv</td>
+                <td>@nv.HoTen</td>
+                <td><span class="badge @(nv.ChucVu == "QuanLy" ? "bg-warning text-dark" : "bg-info")">@(nv.ChucVu == "QuanLy" ? "Quản lý" : "Nhân viên")</span></td>
+                <td>@(nv.PhongBan?.TenPb ?? "-")</td>
+                <td>@nv.RapChieu?.TenRap</td>
+                <td>@nv.Sdt</td>
+                <td>@nv.Email</td>
+                <td><span class="badge @(nv.TrangThai == "Đã khóa" ? "bg-danger" : "bg-success")">@(nv.TrangThai == "Đã khóa" ? "Đã khóa" : "Hoạt động")</span></td>
+                <td class="text-nowrap">
+                    <button type="button" class="btn btn-sm btn-outline-primary btn-edit-nv"
+                            data-id="@nv.Id" data-hoten="@nv.HoTen" data-email="@nv.Email" data-sdt="@nv.Sdt" data-chucvu="@nv.ChucVu"
+                            data-rap="@nv.RapChieuId" data-pb="@nv.PhongBanId" data-ngaysinh="@(nv.NgaySinh?.ToString("yyyy-MM-dd"))"><i class="fas fa-pen-to-square"></i> Sửa</button>
+                    <form method="post" asp-action="KhoaMoTaiKhoanNhanVien" asp-route-maNv="@nv.Id" class="d-inline" onsubmit="return confirm('Xác nhận thay đổi trạng thái tài khoản?')">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-outline-warning"><i class="fas @(nv.TrangThai == "Đã khóa" ? "fa-lock-open" : "fa-lock")"></i> @(nv.TrangThai == "Đã khóa" ? "Mở khóa" : "Khóa")</button>
+                    </form>
+                    <form method="post" asp-action="XoaNhanVien" asp-route-maNv="@nv.Id" class="d-inline" onsubmit="return confirm('Xóa nhân viên này?')">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash-can"></i> Xóa</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+<!-- Add Staff Modal -->
+<div class="modal fade" id="addStaffModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="ThemNhanVien">
+                @Html.AntiForgeryToken()
+                <div class="modal-header"><h5 class="modal-title">Thêm nhân viên</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-2"><label class="form-label">Họ tên</label><input name="hoTen" class="form-control" required /></div>
+                    <div class="mb-2"><label class="form-label">Email</label><input name="email" type="email" class="form-control" required /></div>
+                    <div class="mb-2"><label class="form-label">SĐT</label><input name="sdt" class="form-control" /></div>
+                    <div class="mb-2">
+                        <label class="form-label">Chức vụ</label>
+                        <select name="chucVu" class="form-select">
+                            <option value="NhanVien">Nhân viên</option>
+                            <option value="QuanLy">Quản lý</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Rạp</label>
+                        <select name="maRap" class="form-select" required>
+                            @foreach (var r in danhSachRap)
+                            {
+                                <option value="@r.Id">@r.TenRap</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Phòng ban</label>
+                        <select name="phongBanId" class="form-select">
+                            <option value="">-- Không chọn --</option>
+                            @foreach (var pb in danhSachPhongBan)
+                            {
+                                <option value="@pb.Id">@pb.TenPb</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-2"><label class="form-label">Ngày sinh</label><input name="ngaySinh" type="date" class="form-control" /></div>
+                    <div class="mb-2"><label class="form-label">Mật khẩu</label><input name="matKhau" type="password" class="form-control" minlength="6" required autocomplete="new-password" />
+                        <small class="text-muted">Ít nhất 6 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt (ví dụ: Matkhau@123).</small></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> Thêm</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Staff Modal -->
+<div class="modal fade" id="editStaffModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="SuaNhanVien" id="editStaffForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="maNv" id="editMaNv" />
+                <div class="modal-header"><h5 class="modal-title">Sửa nhân viên</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-2"><label class="form-label">Họ tên</label><input name="hoTen" id="editHoTen" class="form-control" required /></div>
+                    <div class="mb-2"><label class="form-label">Email</label><input name="email" id="editEmail" type="email" class="form-control" required /></div>
+                    <div class="mb-2"><label class="form-label">SĐT</label><input name="sdt" id="editSdt" class="form-control" /></div>
+                    <div class="mb-2">
+                        <label class="form-label">Chức vụ</label>
+                        <select name="chucVu" id="editChucVu" class="form-select">
+                            <option value="NhanVien">Nhân viên</option>
+                            <option value="QuanLy">Quản lý</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Rạp</label>
+                        <select name="maRap" id="editMaRap" class="form-select" required>
+                            @foreach (var r in danhSachRap)
+                            {
+                                <option value="@r.Id">@r.TenRap</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Phòng ban</label>
+                        <select name="phongBanId" id="editPhongBanId" class="form-select">
+                            <option value="">-- Không chọn --</option>
+                            @foreach (var pb in danhSachPhongBan)
+                            {
+                                <option value="@pb.Id">@pb.TenPb</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-2"><label class="form-label">Ngày sinh</label><input name="ngaySinh" id="editNgaySinh" type="date" class="form-control" /></div>
+                    <div class="mb-2"><label class="form-label">Mật khẩu mới (để trống nếu không đổi)</label><input name="matKhauMoi" id="editMatKhauMoi" type="password" class="form-control" minlength="6" autocomplete="new-password" />
+                        <small class="text-muted">Ít nhất 6 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt (ví dụ: Matkhau@123).</small></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-floppy-disk"></i> Lưu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.querySelectorAll('.btn-edit-nv').forEach(function (b) {
+        b.addEventListener('click', function () {
+            openEditModal(b.dataset.id, b.dataset.hoten, b.dataset.email, b.dataset.sdt, b.dataset.chucvu, b.dataset.rap, b.dataset.pb, b.dataset.ngaysinh);
+        });
+    });
+
+    function openEditModal(maNv, hoTen, email, sdt, chucVu, maRap, phongBanId, ngaySinh) {
+        document.getElementById('editMaNv').value = maNv;
+        document.getElementById('editHoTen').value = hoTen;
+        document.getElementById('editEmail').value = email;
+        document.getElementById('editSdt').value = sdt || '';
+        document.getElementById('editMatKhauMoi').value = '';
+        document.getElementById('editChucVu').value = chucVu;
+        document.getElementById('editMaRap').value = maRap;
+        document.getElementById('editPhongBanId').value = (phongBanId && phongBanId !== 'undefined') ? phongBanId : '';
+        document.getElementById('editNgaySinh').value = (ngaySinh && ngaySinh !== 'undefined') ? ngaySinh : '';
+        new bootstrap.Modal(document.getElementById('editStaffModal')).show();
+    }
+</script>
+}

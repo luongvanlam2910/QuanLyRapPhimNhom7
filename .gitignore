@@ -1,0 +1,27 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+## Build output / publish
+publish/
+*.pdb
+
+## Rider / VS Code
+.idea/
+.vscode/
+
+## User-specific files
+*.DotSettings.user
+
+## Uploads (ảnh poster do người dùng tải lên, không phải mã nguồn)
+uploads/
+
+## OS
+Thumbs.db
+.DS_Store
+
+## Thư mục không thuộc dự án (do công cụ khác tạo ra trong thư mục này)
+.cr/

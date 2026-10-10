@@ -1,0 +1,39 @@
+@using DatVeXemPhim.Models.Entities
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = ViewBag.PageTitle;
+    var danhSachTT = (List<ThanhToan>)ViewBag.DanhSachTT;
+
+    string BadgeClass(string? trangThai)
+    {
+        if (string.IsNullOrWhiteSpace(trangThai)) return "bg-warning text-dark";
+        var t = trangThai.ToLower();
+        if (t.Contains("cong") || t.Contains("success") || t.Contains("th")) return "bg-success";
+        return "bg-warning text-dark";
+    }
+}
+
+<h3 class="mb-3">Quản lý thanh toán</h3>
+
+<div class="card p-3">
+    <table class="table table-hover align-middle">
+        <thead><tr><th>Mã TT</th><th>Mã đặt vé</th><th>Số tiền</th><th>Phương thức</th><th>Ngày TT</th><th>Trạng thái</th></tr></thead>
+        <tbody>
+        @if (danhSachTT.Count == 0)
+        {
+            <tr><td colspan="6" class="text-center text-muted">Không có giao dịch nào</td></tr>
+        }
+        @foreach (var tt in danhSachTT)
+        {
+            <tr>
+                <td>@tt.MaTt</td>
+                <td>@tt.DatVe?.MaDat</td>
+                <td>@tt.SoTien.ToString("N0") ₫</td>
+                <td>@tt.PhuongThuc</td>
+                <td>@tt.NgayTt.ToString("HH:mm dd/MM/yyyy")</td>
+                <td><span class="badge @BadgeClass(tt.TrangThai)">@tt.TrangThai</span></td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

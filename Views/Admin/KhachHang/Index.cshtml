@@ -1,0 +1,43 @@
+@using DatVeXemPhim.Models.Entities
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = ViewBag.PageTitle;
+    var danhSachKH = (List<KhachHang>)ViewBag.DanhSachKH;
+}
+
+<h3 class="mb-3">Quản lý khách hàng</h3>
+
+<div class="card p-3">
+    <table class="table table-hover align-middle">
+        <thead><tr><th>Mã</th><th>Họ tên</th><th>SĐT</th><th>Email</th><th>Ngày đăng ký</th><th>Trạng thái</th><th></th></tr></thead>
+        <tbody>
+        @if (danhSachKH.Count == 0)
+        {
+            <tr><td colspan="7" class="text-center text-muted">Không có khách hàng nào</td></tr>
+        }
+        @foreach (var kh in danhSachKH)
+        {
+            var daKhoa = kh.TrangThai == "Đã khóa";
+            <tr>
+                <td>@kh.MaKh</td>
+                <td>@kh.HoTen</td>
+                <td>@kh.Sdt</td>
+                <td>@kh.Email</td>
+                <td>@(kh.NgayDangKy?.ToString("dd/MM/yyyy") ?? "-")</td>
+                <td>
+                    <span class="badge @(daKhoa ? "bg-danger" : "bg-success")">@(kh.TrangThai ?? "Hoạt động")</span>
+                </td>
+                <td>
+                    @if (User.IsInRole("QuanLy"))
+                    {
+                        <form method="post" asp-action="KhoaMoKhoaKhachHang" asp-route-maKh="@kh.Id" onsubmit="return confirm('@(daKhoa ? "Mở khóa" : "Khóa") khách hàng này?')">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm @(daKhoa ? "btn-outline-success" : "btn-outline-danger")"><i class="fas @(daKhoa ? "fa-lock-open" : "fa-lock")"></i> @(daKhoa ? "Mở khóa" : "Khóa")</button>
+                        </form>
+                    }
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

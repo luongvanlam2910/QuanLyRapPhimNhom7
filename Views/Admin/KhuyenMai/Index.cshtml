@@ -1,0 +1,115 @@
+@using DatVeXemPhim.Models.Entities
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = ViewBag.PageTitle;
+    var danhSachKM = (List<KhuyenMai>)ViewBag.DanhSachKM;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Quản lý khuyến mãi</h3>
+    <button class="btn btn-primary" onclick="new bootstrap.Modal(document.getElementById('addPromoModal')).show()"><i class="fas fa-plus"></i> Thêm khuyến mãi</button>
+</div>
+
+<div class="card p-3">
+    <table class="table table-hover align-middle">
+        <thead><tr><th>Mã</th><th>Tên</th><th>Loại giảm</th><th>Giá trị</th><th>Bắt đầu</th><th>Kết thúc</th><th></th></tr></thead>
+        <tbody>
+        @if (danhSachKM.Count == 0)
+        {
+            <tr><td colspan="7" class="text-center text-muted">Không có khuyến mãi nào</td></tr>
+        }
+        @foreach (var km in danhSachKM)
+        {
+            <tr>
+                <td>@km.MaKm</td>
+                <td>@km.TenKm</td>
+                <td><span class="badge @(km.LoaiGiam == "PERCENT" ? "bg-info" : "bg-success")">@(km.LoaiGiam == "PERCENT" ? "Phần trăm" : "Số tiền")</span></td>
+                <td>@(km.LoaiGiam == "PERCENT" ? km.GiaTri + "%" : km.GiaTri.ToString("N0") + " ₫")</td>
+                <td>@(km.NgayBatDau?.ToString("dd/MM/yyyy") ?? "-")</td>
+                <td>@(km.NgayKetThuc?.ToString("dd/MM/yyyy") ?? "-")</td>
+                <td class="text-nowrap">
+                    <button type="button" class="btn btn-sm btn-outline-primary btn-edit-km"
+                            data-id="@km.Id" data-ten="@km.TenKm" data-loai="@km.LoaiGiam"
+                            data-giatri="@km.GiaTri.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)"
+                            data-bd="@(km.NgayBatDau?.ToString("yyyy-MM-dd"))" data-kt="@(km.NgayKetThuc?.ToString("yyyy-MM-dd"))"><i class="fas fa-pen-to-square"></i> Sửa</button>
+                    <form method="post" asp-action="XoaKhuyenMai" asp-route-maKm="@km.Id" class="d-inline" onsubmit="return confirm('Xóa khuyến mãi này?')">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash-can"></i> Xóa</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+<div class="modal fade" id="addPromoModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="ThemKhuyenMai">
+                @Html.AntiForgeryToken()
+                <div class="modal-header"><h5 class="modal-title">Thêm khuyến mãi</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-2"><label class="form-label">Tên khuyến mãi</label><input name="tenKm" class="form-control" required /></div>
+                    <div class="mb-2">
+                        <label class="form-label">Loại giảm</label>
+                        <select name="loaiGiam" class="form-select">
+                            <option value="PERCENT">Phần trăm</option>
+                            <option value="AMOUNT">Số tiền</option>
+                        </select>
+                    </div>
+                    <div class="mb-2"><label class="form-label">Giá trị</label><input name="giaTri" type="number" step="0.01" class="form-control" required /></div>
+                    <div class="mb-2"><label class="form-label">Ngày bắt đầu</label><input name="ngayBatDau" type="date" class="form-control" /></div>
+                    <div class="mb-2"><label class="form-label">Ngày kết thúc</label><input name="ngayKetThuc" type="date" class="form-control" /></div>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> Thêm</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editPromoModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="SuaKhuyenMai" id="editPromoForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="maKm" id="editMaKm" />
+                <div class="modal-header"><h5 class="modal-title">Sửa khuyến mãi</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-2"><label class="form-label">Tên khuyến mãi</label><input name="tenKm" id="editTenKm" class="form-control" required /></div>
+                    <div class="mb-2">
+                        <label class="form-label">Loại giảm</label>
+                        <select name="loaiGiam" id="editLoaiGiam" class="form-select">
+                            <option value="PERCENT">Phần trăm</option>
+                            <option value="AMOUNT">Số tiền</option>
+                        </select>
+                    </div>
+                    <div class="mb-2"><label class="form-label">Giá trị</label><input name="giaTri" id="editGiaTri" type="number" step="0.01" class="form-control" required /></div>
+                    <div class="mb-2"><label class="form-label">Ngày bắt đầu</label><input name="ngayBatDau" id="editNgayBatDau" type="date" class="form-control" /></div>
+                    <div class="mb-2"><label class="form-label">Ngày kết thúc</label><input name="ngayKetThuc" id="editNgayKetThuc" type="date" class="form-control" /></div>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-primary"><i class="fas fa-floppy-disk"></i> Lưu</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.querySelectorAll('.btn-edit-km').forEach(function (b) {
+        b.addEventListener('click', function () {
+            openEditPromo(b.dataset.id, b.dataset.ten, b.dataset.loai, b.dataset.giatri, b.dataset.bd, b.dataset.kt);
+        });
+    });
+
+    function openEditPromo(maKm, tenKm, loaiGiam, giaTri, ngayBatDau, ngayKetThuc) {
+        document.getElementById('editMaKm').value = maKm;
+        document.getElementById('editTenKm').value = tenKm;
+        document.getElementById('editLoaiGiam').value = loaiGiam;
+        document.getElementById('editGiaTri').value = giaTri;
+        document.getElementById('editNgayBatDau').value = (ngayBatDau && ngayBatDau !== 'undefined') ? ngayBatDau : '';
+        document.getElementById('editNgayKetThuc').value = (ngayKetThuc && ngayKetThuc !== 'undefined') ? ngayKetThuc : '';
+        new bootstrap.Modal(document.getElementById('editPromoModal')).show();
+    }
+</script>
+}
