@@ -1,0 +1,111 @@
+@using DatVeXemPhim.Models.Entities
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = ViewBag.PageTitle;
+    var danhSachDatVe = (List<DatVe>)ViewBag.DanhSachDatVe;
+    bool laQuanLy = (bool)(ViewBag.LaQuanLy ?? false);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>@(laQuanLy ? "Quản lý đặt vé" : "Vé tôi đã bán")</h3>
+    <span>@DateTime.Now.ToString("HH:mm - dd/MM/yyyy")</span>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-3"><div class="card p-2 text-center"><div class="text-muted small">Đã thanh toán</div><h5>@ViewBag.SoThanhToan</h5></div></div>
+    <div class="col-md-3"><div class="card p-2 text-center"><div class="text-muted small">Chờ thanh toán</div><h5>@ViewBag.SoChoPhanHoi</h5></div></div>
+    <div class="col-md-3"><div class="card p-2 text-center"><div class="text-muted small">Đã hủy</div><h5>@ViewBag.SoHuy</h5></div></div>
+    @if (laQuanLy)
+    {
+        <div class="col-md-3"><div class="card p-2 text-center"><div class="text-muted small">Tổng doanh thu</div><h5>@(((decimal)ViewBag.TongDoanhThu).ToString("N0")) ₫</h5></div></div>
+    }
+</div>
+
+<form method="get" asp-action="Index" class="row g-2 mb-3">
+    <div class="col-md-4">
+        <input type="text" class="form-control" name="keyword" value="@ViewBag.Keyword" placeholder="Mã đặt, tên KH, email..." />
+    </div>
+    <div class="col-md-3">
+        <select class="form-select" name="trangThai">
+            <option value="">-- Tất cả trạng thái --</option>
+            <option value="Đã thanh toán" selected="@("Đã thanh toán" == (string)(ViewBag.TrangThaiFilter ?? ""))">Đã thanh toán</option>
+            <option value="Chờ thanh toán" selected="@("Chờ thanh toán" == (string)(ViewBag.TrangThaiFilter ?? ""))">Chờ thanh toán</option>
+            <option value="Đã hủy" selected="@("Đã hủy" == (string)(ViewBag.TrangThaiFilter ?? ""))">Đã hủy</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <button class="btn btn-primary w-100" type="submit"><i class="fas fa-filter"></i> Lọc</button>
+    </div>
+    <div class="col-md-2">
+        <a class="btn btn-secondary w-100" asp-action="Index"><i class="fas fa-rotate-left"></i> Đặt lại</a>
+    </div>
+</form>
+
+<div class="card p-3">
+    <div class="mb-2"><span class="badge bg-secondary">@danhSachDatVe.Count đơn</span></div>
+    <table class="table table-hover align-middle">
+        <thead>
+        <tr>
+            <th>Mã đặt</th><th>Khách hàng</th><th>Phim / suất chiếu</th><th>Ghế</th><th>Tổng tiền</th><th>Ngày đặt</th><th>Trạng thái</th><th></th>
+        </tr>
+        </thead>
+        <tbody>
+        @if (danhSachDatVe.Count == 0)
+        {
+            <tr><td colspan="8" class="text-center text-muted">Không có đặt vé nào</td></tr>
+        }
+        @foreach (var dv in danhSachDatVe)
+        {
+            var firstVe = dv.Ves.FirstOrDefault();
+            <tr>
+                <td>@dv.MaDat</td>
+                <td>@dv.KhachHang?.HoTen<br /><small class="text-muted">@dv.KhachHang?.Email</small></td>
+                <td>
+                @if (firstVe?.LichChieu != null)
+                {
+                    @firstVe.LichChieu.Phim?.TenPhim
+                    <br /><small class="text-muted">@firstVe.LichChieu.ThoiGianBatDau.ToString("HH:mm dd/MM")</small>
+                }
+                </td>
+                <td>
+                @foreach (var ve in dv.Ves)
+                {
+                    <span class="badge bg-light text-dark border me-1">@ve.Ghe?.HangGhe@(ve.Ghe?.SoGhe)</span>
+                }
+                </td>
+                <td>@dv.TongTien.ToString("N0") ₫</td>
+                <td>@dv.NgayDat.ToString("HH:mm dd/MM/yy")</td>
+                <td data-val="@dv.TrangThai">
+                    @if (!laQuanLy)
+                    {
+                        <span class="badge @(dv.TrangThai == "Đã thanh toán" ? "bg-success" : dv.TrangThai == "Đã hủy" ? "bg-danger" : "bg-warning text-dark")">@dv.TrangThai</span>
+                    }
+                    else
+                    {
+                    <form method="post" asp-action="CapNhatTrangThai" asp-route-maDat="@dv.Id">
+                        @Html.AntiForgeryToken()
+                        @{
+                            // Chỉ hiện các bước chuyển hợp lệ: Chờ → Đã thanh toán/Đã hủy; Đã thanh toán → Đã hủy; Đã hủy là trạng thái cuối.
+                            var trangThaiCu = dv.TrangThai ?? "";
+                            var choPhep = trangThaiCu == "Chờ thanh toán" ? new[] { "Chờ thanh toán", "Đã thanh toán", "Đã hủy" }
+                                        : trangThaiCu == "Đã thanh toán" ? new[] { "Đã thanh toán", "Đã hủy" }
+                                        : new[] { trangThaiCu };
+                            var khoa = choPhep.Length == 1;
+                        }
+                        <select name="trangThai" class="form-select form-select-sm" data-cu="@trangThaiCu" disabled="@khoa"
+                                title="@(khoa ? "Đơn đã hủy là trạng thái cuối, không thể thay đổi" : trangThaiCu == "Đã thanh toán" ? "Đơn đã thanh toán chỉ có thể hủy (hoàn tiền)" : "")"
+                                onchange="if (this.value === 'Đã hủy' &amp;&amp; !confirm('Hủy đơn này? Ghế sẽ được trả lại và không thể mở lại đơn.')) { this.value = this.dataset.cu; return; } if (this.value === 'Đã thanh toán' &amp;&amp; !confirm('Xác nhận khách đã thanh toán đơn này?')) { this.value = this.dataset.cu; return; } this.form.submit()">
+                            @foreach (var tt in choPhep)
+                            {
+                                <option value="@tt" selected="@(tt == trangThaiCu)">@tt</option>
+                            }
+                        </select>
+                    </form>
+                    }
+                </td>
+                <td><a class="btn btn-sm btn-outline-secondary" target="_blank" href="/dat-ve/ket-qua/@dv.MaDat"><i class="fas fa-eye"></i> Xem</a></td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
